@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "HelloPS.h"
 #include "HelloPSDlg.h"
+#include "ManageDlg.h"
+#include <fstream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -8,7 +10,9 @@
 
 BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
 	ON_WM_DESTROY()
-	ON_BN_CLICKED(IDC_IMPORT_BTN, &CHelloPSDlg::OnBnClickedImportBtn)
+	ON_BN_CLICKED(IDC_MANAGE_BTN, &CHelloPSDlg::OnBnClickedManageBtn)
+	ON_CBN_DROPDOWN(IDC_WEAPON_LST_1, &CHelloPSDlg::OnCbnDropdownWeaponLst1)
+	ON_CBN_SELCHANGE(IDC_WEAPON_LST_1, &CHelloPSDlg::OnCbnSelchangeWeaponLst1)
 END_MESSAGE_MAP()
 
 CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG)
@@ -18,8 +22,6 @@ CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG)
 void CHelloPSDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_FACTION_LST_1, m_factionLst1);
-	DDX_Control(pDX, IDC_CATEGORY_LST_1, m_categoryLst1);
 	DDX_Control(pDX, IDC_WEAPON_LST_1, m_weaponLst1);
 }
 
@@ -48,35 +50,28 @@ void CHelloPSDlg::OnDestroy()
 void CHelloPSDlg::ReadSettingFile()
 {
 	std::ifstream ifs;
-	nlohmann::json json;
 
 	// path
-	if (m_json.IsEmpty())
+	if (m_path.IsEmpty())
 	{
-		AfxGetModuleFileName(AfxGetInstanceHandle(), m_json);
-		PathRenameExtension(m_json.GetBuffer(m_json.GetLength() + MAX_PATH), TEXT(".json"));
-		m_json.ReleaseBuffer();
+		AfxGetModuleFileName(AfxGetInstanceHandle(), m_path);
+		PathRenameExtension(m_path.GetBuffer(m_path.GetLength() + MAX_PATH), TEXT(".json"));
+		m_path.ReleaseBuffer();
 	}
 
 	// open, read, and close
-	ifs.open(m_json);
+	ifs.open(m_path);
 
 	if (ifs.is_open())
 	{
-		json << ifs;
+		m_json << ifs;
 		ifs.close();
 	}
 
-	// settings
-	m_cats = json["Categories"];
-	m_factions = json["Factions"];
-	m_modes = json["Modes"];
-	m_weapons = json["Weapons"];
-
 	// default: category filters
-	if (!m_cats.is_array())
+	if (!m_json["Categories"].is_array())
 	{
-		m_cats =
+		m_json["Categories"] =
 		{
 			"Assault Rifle", "Battle Rifle", "Carbine", "LMG", "Pistol",
 			"SMG", "Scout Rifle", "Sniper Rifle"
@@ -84,151 +79,95 @@ void CHelloPSDlg::ReadSettingFile()
 	}
 
 	// default: factions
-	if (!m_factions.is_array())
+	if (!m_json["Factions"].is_array())
 	{
-		m_factions =
+		m_json["Factions"] =
 		{
 			"NC", "NS", "TR", "VS"
 		};
 	}
 
 	// default: fire mode filters
-	if (!m_modes.is_array())
+	if (!m_json["Modes"].is_array())
 	{
-		m_modes =
+		m_json["Modes"] =
 		{
 			"Auto", "3x Burst", "2x Burst", "Semi-Auto"
 		};
 	}
+
+	//// default: empty weapons
+	//if (!m_json["Weapons"].is_object())
+	//{
+	//	m_json["Weapons"] = nlohmann::json::object();
+	//}
+
+	//if (!m_json["Weapons1"].is_array())
+	//{
+	//	m_json["Weapons1"] = nlohmann::json::array();
+	//}
+
+	//if (!m_json["Weapons2"].is_array())
+	//{
+	//	m_json["Weapons2"] = nlohmann::json::array();
+	//}
 }
 
 void CHelloPSDlg::WriteSettingFile()
 {
 	std::ofstream ofs;
-	nlohmann::json json;
-
-	// settings
-	json["Categories"] = m_cats;
-	json["Factions"] = m_factions;
-	json["Modes"] = m_modes;
-	json["Weapons"] = m_weapons;
 
 	// open, write, and close
-	ofs.open(m_json);
+	ofs.open(m_path);
 
 	if (ofs.is_open())
 	{
-		ofs << std::setw(4) << json;
+		ofs << std::setw(4) << m_json;
 		ofs.close();
 	}
 }
 
-void CHelloPSDlg::OnBnClickedImportBtn()
+void CHelloPSDlg::OnBnClickedManageBtn()
 {
-	CFileDialog ofd(TRUE, NULL, NULL, OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST,
-		TEXT("JavaScript Object Notation|*.json||"));
-	std::ifstream ifs;
-	std::string name, cat, faction;
-	nlohmann::json json, weapons, mode, data;
-	nlohmann::json::iterator it, found;
-	double recoil, factor, angleMin, angleMax;
-	int burst, delay, speed;
+	CManageDlg dlg;
 
-	if (ofd.DoModal() != IDOK)
+	dlg.SetJson(m_json);
+	
+	if (dlg.DoModal() == IDOK)
 	{
-		return;
+		dlg.GetJson(m_json);
 	}
+}
 
-	// open, read, and close
-	ifs.open(ofd.GetPathName());
+void CHelloPSDlg::OnCbnDropdownWeaponLst1()
+{
+	//CString text;
+	//std::string selText;
+	//int selIndex;
 
-	if (ifs.is_open())
-	{
-		json << ifs;
-		ifs.close();
-	}
+	//m_weaponLst1.GetWindowText(text);
+	//selText = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
-	for (nlohmann::json& i : json["item_list"])
-	{
-		// name, category
-		if (!i["name"]["en"].is_string() ||
-			!i["item_category"]["name"]["en"].is_string())
-		{
-			continue;
-		}
+	//m_weaponLst1.ResetContent();
+	//selIndex = -1;
 
-		name = i["name"]["en"].get<std::string>();
-		cat = i["item_category"]["name"]["en"].get<std::string>();
+	//for (std::string name : m_weapons1)
+	//{
+	//	if (selIndex < 0 && name == selText)
+	//	{
+	//		selIndex = m_weaponLst1.GetCount();
+	//	}
 
-		// category filter
-		if (std::find(m_cats.begin(), m_cats.end(), cat) == m_cats.end())
-		{
-			continue;
-		}
+	//	text = (LPTSTR)ATL::CA2T(name.c_str(), CP_UTF8);
+	//	m_weaponLst1.AddString(text);
+	//}
 
-		// faction
-		if (i["faction_id"] == "1") faction = "VS";
-		else if (i["faction_id"] == "2") faction = "NC";
-		else if (i["faction_id"] == "3") faction = "TR";
-		else faction = "NS";
+	//if (selIndex >= 0)
+	//{
+	//	m_weaponLst1.SetCurSel(selIndex);
+	//}
+}
 
-		// fire mode filter
-		found = m_modes.end();
-
-		for (nlohmann::json& m : i["fire_mode"])
-		{
-			it = std::find(m_modes.begin(), m_modes.end(), m["description"]["en"]);
-
-			if (it < found && m["type"] == "primary")
-			{
-				mode = m["fire_mode_2"];
-				found = it;
-			}
-		}
-
-		if (found == m_modes.end())
-		{
-			continue;
-		}
-
-		// burst count
-		burst = std::stoi(mode["fire_burst_count"].get<std::string>());
-
-		// first shot delay
-		delay = std::stoi(mode["fire_delay_ms"].get<std::string>());
-
-		// auto, semi-auto
-		if (burst <= 1)
-		{
-			speed = std::stoi(mode["fire_refire_ms"].get<std::string>());
-
-			if (std::stoi(mode["automatic"].get<std::string>()) != 0)
-			{
-				burst = 0;
-			}
-		}
-		// 2x burst, 3x burst
-		else
-		{
-			speed = std::stoi(mode["fire_auto_fire_ms"].get<std::string>());
-		}
-
-		// recoil, first shot multiplier, angle
-		recoil = std::stod(mode["recoil_magnitude_min"].get<std::string>());
-		factor = std::stod(mode["recoil_first_shot_modifier"].get<std::string>());
-		angleMin = std::stod(mode["recoil_angle_min"].get<std::string>());
-		angleMax = std::stod(mode["recoil_angle_max"].get<std::string>());
-
-		data["AngleMin"] = angleMin;
-		data["AngleMax"] = angleMax;
-		data["Burst"] = burst;
-		data["Delay"] = delay;
-		data["Factor"] = factor;
-		data["Recoil"] = recoil;
-		data["Speed"] = (int)((double)(60 * 1000) / speed + 0.5);
-
-		weapons[faction][cat][name] = data;
-	}
-
-	m_weapons = weapons;
+void CHelloPSDlg::OnCbnSelchangeWeaponLst1()
+{
 }
