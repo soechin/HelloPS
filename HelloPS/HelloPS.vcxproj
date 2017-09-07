@@ -104,6 +104,7 @@
   <ItemGroup>
     <ClInclude Include="HelloPS.h" />
     <ClInclude Include="HelloPSDlg.h" />
+    <ClInclude Include="json.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />

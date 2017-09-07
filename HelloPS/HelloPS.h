@@ -9,9 +9,12 @@
 class CHelloPSApp : public CWinApp
 {
 	DECLARE_MESSAGE_MAP()
+private:
+	HANDLE m_mutex;
 public:
 	CHelloPSApp();
 	virtual BOOL InitInstance();
+	virtual int ExitInstance();
 };
 
 extern CHelloPSApp theApp;

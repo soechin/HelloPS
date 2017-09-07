@@ -1,5 +1,19 @@
 #pragma once
 
+// fix min/max macro
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
+#include <algorithm>
+
+namespace Gdiplus
+{
+	using std::min;
+	using std::max;
+}
+// end fix
+
 #ifndef VC_EXTRALEAN
 #define VC_EXTRALEAN
 #endif

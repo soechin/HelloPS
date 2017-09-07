@@ -26,9 +26,13 @@ BOOL CHelloPSApp::InitInstance()
 	CShellManager *pShellManager = new CShellManager;
 	CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerWindows));
 
-	CHelloPSDlg dlg;
-	m_pMainWnd = &dlg;
-	dlg.DoModal();
+	m_mutex = CreateMutex(NULL, FALSE, TEXT("HelloPS"));
+	if (GetLastError() != ERROR_ALREADY_EXISTS)
+	{
+		CHelloPSDlg dlg;
+		m_pMainWnd = &dlg;
+		dlg.DoModal();
+	}
 
 	if (pShellManager != NULL)
 	{
@@ -40,4 +44,14 @@ BOOL CHelloPSApp::InitInstance()
 #endif
 
 	return FALSE;
+}
+
+int CHelloPSApp::ExitInstance()
+{
+	if (m_mutex != NULL)
+	{
+		CloseHandle(m_mutex);
+	}
+
+	return CWinApp::ExitInstance();
 }
