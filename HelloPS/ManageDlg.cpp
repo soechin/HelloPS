@@ -7,12 +7,12 @@
 
 IMPLEMENT_DYNAMIC(CManageDlg, CDialogEx)
 BEGIN_MESSAGE_MAP(CManageDlg, CDialogEx)
-	ON_CBN_DROPDOWN(IDC_FACTION_LST, &CManageDlg::OnUpdateFactionLst)
-	ON_CBN_DROPDOWN(IDC_CATEGORY_LST, &CManageDlg::OnUpdateCategoryLst)
-	ON_BN_CLICKED(IDC_PRIMARY_RAD, &CManageDlg::OnUpdateWeaponLst1)
-	ON_BN_CLICKED(IDC_SECONDARY_RAD, &CManageDlg::OnUpdateWeaponLst1)
-	ON_CBN_SELCHANGE(IDC_FACTION_LST, &CManageDlg::OnUpdateWeaponLst2)
-	ON_CBN_SELCHANGE(IDC_CATEGORY_LST, &CManageDlg::OnUpdateWeaponLst2)
+	ON_CBN_DROPDOWN(IDC_FACTION_LST, &CManageDlg::OnListFactions)
+	ON_CBN_DROPDOWN(IDC_CATEGORY_LST, &CManageDlg::OnListCategories)
+	ON_BN_CLICKED(IDC_PRIMARY_RAD, &CManageDlg::OnListWeapons1)
+	ON_BN_CLICKED(IDC_SECONDARY_RAD, &CManageDlg::OnListWeapons1)
+	ON_CBN_SELCHANGE(IDC_FACTION_LST, &CManageDlg::OnListWeapons2)
+	ON_CBN_SELCHANGE(IDC_CATEGORY_LST, &CManageDlg::OnListWeapons2)
 	ON_BN_CLICKED(IDC_INSERT_BTN, &CManageDlg::OnBnClickedInsertBtn)
 	ON_BN_CLICKED(IDC_REMOVE_BTN, &CManageDlg::OnBnClickedRemoveBtn)
 	ON_BN_CLICKED(IDC_IMPORT_BTN, &CManageDlg::OnBnClickedImportBtn)
@@ -44,7 +44,7 @@ BOOL CManageDlg::OnInitDialog()
 	return TRUE;
 }
 
-void CManageDlg::OnUpdateWeaponLst1()
+void CManageDlg::OnListWeapons1()
 {
 	CString text;
 	soechin::sqlite_stmt stmt;
@@ -96,7 +96,7 @@ void CManageDlg::OnUpdateWeaponLst1()
 	}
 }
 
-void CManageDlg::OnUpdateWeaponLst2()
+void CManageDlg::OnListWeapons2()
 {
 	CString text;
 	std::string selText, name, faction, category;
@@ -144,7 +144,7 @@ void CManageDlg::OnUpdateWeaponLst2()
 	}
 }
 
-void CManageDlg::OnUpdateFactionLst()
+void CManageDlg::OnListFactions()
 {
 	CString text;
 	soechin::sqlite_stmt stmt;
@@ -181,7 +181,7 @@ void CManageDlg::OnUpdateFactionLst()
 	}
 }
 
-void CManageDlg::OnUpdateCategoryLst()
+void CManageDlg::OnListCategories()
 {
 	CString text;
 	soechin::sqlite_stmt stmt;
@@ -256,7 +256,7 @@ void CManageDlg::OnBnClickedInsertBtn()
 	stmt.finalize();
 
 	// refresh
-	OnUpdateWeaponLst1();
+	OnListWeapons1();
 }
 
 void CManageDlg::OnBnClickedRemoveBtn()
@@ -297,7 +297,7 @@ void CManageDlg::OnBnClickedRemoveBtn()
 	stmt.finalize();
 
 	// refresh
-	OnUpdateWeaponLst1();
+	OnListWeapons1();
 }
 
 void CManageDlg::OnBnClickedImportBtn()
@@ -345,6 +345,13 @@ void CManageDlg::OnBnClickedImportBtn()
 	modes.push_back("3x Burst");
 	modes.push_back("2x Burst");
 	modes.push_back("Semi-Auto");
+
+	// prepare to insert
+	stmt.prepare(m_sqlite, "INSERT OR REPLACE INTO WeaponsDB "
+		"(Name, Faction, Category, Speed, Recoil, Factor, "
+		"AngleMin, AngleMax, Burst, Delay) VALUES "
+		"(@name, @faction, @category, @speed, @recoil, @factor, "
+		"@angleMin, @angleMax, @burst, @delay);");
 
 	for (int i = 0; i < (int)json["item_list"].size(); i++)
 	{
@@ -440,11 +447,7 @@ void CManageDlg::OnBnClickedImportBtn()
 		angleMax = std::stod(mode["recoil_angle_max"].get<std::string>());
 
 		// insert into database
-		stmt.prepare(m_sqlite, "INSERT OR REPLACE INTO WeaponsDB "
-			"(Name, Faction, Category, Speed, Recoil, Factor, "
-			"AngleMin, AngleMax, Burst, Delay) VALUES "
-			"(@name, @faction, @category, @speed, @recoil, @factor, "
-			"@angleMin, @angleMax, @burst, @delay);");
+		stmt.reset();
 		stmt.bind("@name", name);
 		stmt.bind("@faction", faction);
 		stmt.bind("@category", category);
@@ -456,9 +459,11 @@ void CManageDlg::OnBnClickedImportBtn()
 		stmt.bind("@burst", burst);
 		stmt.bind("@delay", (double)delay / 1000); // ms -> sec
 		stmt.step();
-		stmt.finalize();
 	}
 
+	// cleanup
+	stmt.finalize();
+
 	// refresh
-	OnUpdateWeaponLst2();
+	OnListWeapons2();
 }

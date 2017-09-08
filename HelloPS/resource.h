@@ -15,6 +15,13 @@
 #define IDC_INSERT_BTN                  1008
 #define IDC_REMOVE_BTN                  1009
 #define IDC_IMPORT_BTN                  1010
+#define IDC_SIGHT_LST_1                 1011
+#define IDC_SIGHT_LST_2                 1012
+#define IDC_DURATION_EDT_1              1013
+#define IDC_DURATION_EDT_2              1014
+#define IDC_SENSITIVITY_EDT_1           1015
+#define IDC_SENSITIVITY_EDT_2           1016
+#define IDC_SENSITIVITY_EDT_3           1017
 
 // Next default values for new objects
 // 
@@ -22,7 +29,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        202
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1011
+#define _APS_NEXT_CONTROL_VALUE         1016
 #define _APS_NEXT_SYMED_VALUE           103
 #endif
 #endif

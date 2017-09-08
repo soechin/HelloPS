@@ -152,6 +152,14 @@ namespace soechin
 			return false;
 		}
 
+		virtual void reset()
+		{
+			int ret;
+
+			ret = sqlite3_reset(m_stmt);
+			if (ret != SQLITE_OK) throw sqlite_error(ret);
+		}
+
 		virtual void bind(int index, int value)
 		{
 			int ret;

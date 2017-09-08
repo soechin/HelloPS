@@ -10,10 +10,10 @@ public:
 	CManageDlg(soechin::sqlite* sqlite);
 	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual BOOL OnInitDialog();
-	afx_msg void OnUpdateWeaponLst1();
-	afx_msg void OnUpdateWeaponLst2();
-	afx_msg void OnUpdateFactionLst();
-	afx_msg void OnUpdateCategoryLst();
+	afx_msg void OnListWeapons1();
+	afx_msg void OnListWeapons2();
+	afx_msg void OnListFactions();
+	afx_msg void OnListCategories();
 	afx_msg void OnBnClickedInsertBtn();
 	afx_msg void OnBnClickedRemoveBtn();
 	afx_msg void OnBnClickedImportBtn();
