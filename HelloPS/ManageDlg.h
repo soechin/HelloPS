@@ -1,23 +1,19 @@
 #pragma once
 
-#include "json.hpp"
+#include "sqlite.hpp"
 
 class CManageDlg : public CDialogEx
 {
 	DECLARE_DYNAMIC(CManageDlg)
 	DECLARE_MESSAGE_MAP()
 public:
-	CManageDlg();
+	CManageDlg(soechin::sqlite* sqlite);
 	virtual void DoDataExchange(CDataExchange* pDX);
-	virtual void GetJson(nlohmann::json& json);
-	virtual void SetJson(nlohmann::json json);
 	virtual BOOL OnInitDialog();
-	afx_msg void OnBnClickedPrimaryRad();
-	afx_msg void OnBnClickedSecondaryRad();
-	afx_msg void OnCbnDropdownFactionLst();
-	afx_msg void OnCbnDropdownCategoryLst();
-	afx_msg void OnCbnSelchangeFactionLst();
-	afx_msg void OnCbnSelchangeCategoryLst();
+	afx_msg void OnUpdateWeaponLst1();
+	afx_msg void OnUpdateWeaponLst2();
+	afx_msg void OnUpdateFactionLst();
+	afx_msg void OnUpdateCategoryLst();
 	afx_msg void OnBnClickedInsertBtn();
 	afx_msg void OnBnClickedRemoveBtn();
 	afx_msg void OnBnClickedImportBtn();
@@ -25,8 +21,8 @@ private:
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MANAGE_DIALOG };
 #endif
-	// json
-	nlohmann::json m_json;
+	// database
+	soechin::sqlite* m_sqlite;
 	// user interface
 	CButton m_primaryRad;
 	CButton m_secondaryRad;

@@ -1,23 +1,26 @@
 #include "stdafx.h"
 #include "HelloPS.h"
 #include "ManageDlg.h"
+// JSON for Modern C++
+#include "json.hpp"
 #include <fstream>
 
 IMPLEMENT_DYNAMIC(CManageDlg, CDialogEx)
 BEGIN_MESSAGE_MAP(CManageDlg, CDialogEx)
-	ON_BN_CLICKED(IDC_PRIMARY_RAD, &CManageDlg::OnBnClickedPrimaryRad)
-	ON_BN_CLICKED(IDC_SECONDARY_RAD, &CManageDlg::OnBnClickedSecondaryRad)
-	ON_CBN_DROPDOWN(IDC_FACTION_LST, &CManageDlg::OnCbnDropdownFactionLst)
-	ON_CBN_DROPDOWN(IDC_CATEGORY_LST, &CManageDlg::OnCbnDropdownCategoryLst)
-	ON_CBN_SELCHANGE(IDC_FACTION_LST, &CManageDlg::OnCbnSelchangeFactionLst)
-	ON_CBN_SELCHANGE(IDC_CATEGORY_LST, &CManageDlg::OnCbnSelchangeCategoryLst)
+	ON_CBN_DROPDOWN(IDC_FACTION_LST, &CManageDlg::OnUpdateFactionLst)
+	ON_CBN_DROPDOWN(IDC_CATEGORY_LST, &CManageDlg::OnUpdateCategoryLst)
+	ON_BN_CLICKED(IDC_PRIMARY_RAD, &CManageDlg::OnUpdateWeaponLst1)
+	ON_BN_CLICKED(IDC_SECONDARY_RAD, &CManageDlg::OnUpdateWeaponLst1)
+	ON_CBN_SELCHANGE(IDC_FACTION_LST, &CManageDlg::OnUpdateWeaponLst2)
+	ON_CBN_SELCHANGE(IDC_CATEGORY_LST, &CManageDlg::OnUpdateWeaponLst2)
 	ON_BN_CLICKED(IDC_INSERT_BTN, &CManageDlg::OnBnClickedInsertBtn)
 	ON_BN_CLICKED(IDC_REMOVE_BTN, &CManageDlg::OnBnClickedRemoveBtn)
 	ON_BN_CLICKED(IDC_IMPORT_BTN, &CManageDlg::OnBnClickedImportBtn)
 END_MESSAGE_MAP()
 
-CManageDlg::CManageDlg() : CDialogEx(IDD_MANAGE_DIALOG)
+CManageDlg::CManageDlg(soechin::sqlite* sqlite) : CDialogEx(IDD_MANAGE_DIALOG)
 {
+	m_sqlite = sqlite;
 }
 
 void CManageDlg::DoDataExchange(CDataExchange* pDX)
@@ -41,30 +44,12 @@ BOOL CManageDlg::OnInitDialog()
 	return TRUE;
 }
 
-void CManageDlg::GetJson(nlohmann::json& json)
-{
-	json = m_json;
-}
-
-void CManageDlg::SetJson(nlohmann::json json)
-{
-	m_json = json;
-}
-
-void CManageDlg::OnBnClickedPrimaryRad()
-{
-	OnBnClickedSecondaryRad();
-}
-
-void CManageDlg::OnBnClickedSecondaryRad()
+void CManageDlg::OnUpdateWeaponLst1()
 {
 	CString text;
-	std::string selText, selRad;
+	soechin::sqlite_stmt stmt;
+	std::string selText, name;
 	int selIndex;
-
-	if (m_primaryRad.GetCheck() == BST_CHECKED) selRad = "Weapons1";
-	else if (m_secondaryRad.GetCheck() == BST_CHECKED) selRad = "Weapons2";
-	else return;
 
 	if ((selIndex = m_weaponLst1.GetCurSel()) >= 0)
 	{
@@ -75,8 +60,25 @@ void CManageDlg::OnBnClickedSecondaryRad()
 	m_weaponLst1.ResetContent();
 	selIndex = -1;
 
-	for (std::string name : m_json[selRad])
+	if (m_primaryRad.GetCheck() == BST_CHECKED)
 	{
+		stmt.prepare(m_sqlite, "SELECT Name FROM Weapons1 "
+			"ORDER BY Name");
+	}
+	else if (m_secondaryRad.GetCheck() == BST_CHECKED)
+	{
+		stmt.prepare(m_sqlite, "SELECT Name FROM Weapons2 "
+			"ORDER BY Name");
+	}
+	else
+	{
+		return;
+	}
+
+	while (stmt.step())
+	{
+		stmt.column("Name", name);
+
 		if (selIndex < 0 && selText == name)
 		{
 			selIndex = m_weaponLst1.GetCount();
@@ -86,88 +88,26 @@ void CManageDlg::OnBnClickedSecondaryRad()
 		m_weaponLst1.AddString(text);
 	}
 
+	stmt.finalize();
+
 	if (selIndex >= 0)
 	{
 		m_weaponLst1.SetCurSel(selIndex);
 	}
 }
 
-void CManageDlg::OnCbnDropdownFactionLst()
+void CManageDlg::OnUpdateWeaponLst2()
 {
 	CString text;
-	std::string selText;
+	std::string selText, name, faction, category;
+	soechin::sqlite_stmt stmt;
 	int selIndex;
-
-	m_factionLst.GetWindowText(text);
-	selText = (LPSTR)ATL::CT2A(text, CP_UTF8);
-
-	m_factionLst.ResetContent();
-	selIndex = -1;
-
-	for (std::string faction : m_json["Factions"])
-	{
-		if (selIndex < 0 && selText == faction)
-		{
-			selIndex = m_factionLst.GetCount();
-		}
-
-		text = (LPTSTR)ATL::CA2T(faction.c_str(), CP_UTF8);
-		m_factionLst.AddString(text);
-	}
-
-	if (selIndex >= 0)
-	{
-		m_factionLst.SetCurSel(selIndex);
-	}
-}
-
-void CManageDlg::OnCbnDropdownCategoryLst()
-{
-	CString text;
-	std::string selText;
-	int selIndex;
-
-	m_categoryLst.GetWindowText(text);
-	selText = (LPSTR)ATL::CT2A(text, CP_UTF8);
-
-	m_categoryLst.ResetContent();
-	selIndex = -1;
-
-	for (std::string category : m_json["Categories"])
-	{
-		if (selIndex < 0 && selText == category)
-		{
-			selIndex = m_categoryLst.GetCount();
-		}
-
-		text = (LPTSTR)ATL::CA2T(category.c_str(), CP_UTF8);
-		m_categoryLst.AddString(text);
-	}
-
-	if (selIndex >= 0)
-	{
-		m_categoryLst.SetCurSel(selIndex);
-	}
-}
-
-void CManageDlg::OnCbnSelchangeFactionLst()
-{
-	OnCbnSelchangeCategoryLst();
-}
-
-void CManageDlg::OnCbnSelchangeCategoryLst()
-{
-	CString text;
-	std::string selText, name, category, faction;
-	nlohmann::json weapon;
-	nlohmann::json::iterator it;
-	int selIndex;
-
-	m_categoryLst.GetWindowText(text);
-	category = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
 	m_factionLst.GetWindowText(text);
 	faction = (LPSTR)ATL::CT2A(text, CP_UTF8);
+
+	m_categoryLst.GetWindowText(text);
+	category = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
 	if ((selIndex = m_weaponLst2.GetCurSel()) >= 0)
 	{
@@ -178,23 +118,25 @@ void CManageDlg::OnCbnSelchangeCategoryLst()
 	m_weaponLst2.ResetContent();
 	selIndex = -1;
 
-	for (it = m_json["Weapons"].begin(); it != m_json["Weapons"].end(); it++)
+	stmt.prepare(m_sqlite, "SELECT Name FROM WeaponsDB WHERE "
+		"Faction = @faction AND Category = @category ORDER BY Name;");
+	stmt.bind("@faction", faction);
+	stmt.bind("@category", category);
+
+	while (stmt.step())
 	{
-		name = it.key();
-		weapon = it.value();
+		stmt.column("Name", name);
 
-		if (weapon["Category"] == category &&
-			weapon["Faction"] == faction)
+		if (selIndex < 0 && selText == name)
 		{
-			if (selIndex < 0 && selText == name)
-			{
-				selIndex = m_weaponLst2.GetCount();
-			}
-
-			text = (LPTSTR)ATL::CA2T(name.c_str(), CP_UTF8);
-			m_weaponLst2.AddString(text);
+			selIndex = m_weaponLst2.GetCount();
 		}
+
+		text = (LPTSTR)ATL::CA2T(name.c_str(), CP_UTF8);
+		m_weaponLst2.AddString(text);
 	}
+
+	stmt.finalize();
 
 	if (selIndex >= 0)
 	{
@@ -202,76 +144,160 @@ void CManageDlg::OnCbnSelchangeCategoryLst()
 	}
 }
 
+void CManageDlg::OnUpdateFactionLst()
+{
+	CString text;
+	soechin::sqlite_stmt stmt;
+	std::string selText, faction;
+	int selIndex;
+
+	m_factionLst.GetWindowText(text);
+	selText = (LPSTR)ATL::CT2A(text, CP_UTF8);
+
+	m_factionLst.ResetContent();
+	selIndex = -1;
+
+	stmt.prepare(m_sqlite, "SELECT DISTINCT Faction FROM WeaponsDB "
+		"ORDER BY Faction;");
+
+	while (stmt.step())
+	{
+		stmt.column("Faction", faction);
+
+		if (selIndex < 0 && selText == faction)
+		{
+			selIndex = m_factionLst.GetCount();
+		}
+
+		text = (LPTSTR)ATL::CA2T(faction.c_str(), CP_UTF8);
+		m_factionLst.AddString(text);
+	}
+
+	stmt.finalize();
+
+	if (selIndex >= 0)
+	{
+		m_factionLst.SetCurSel(selIndex);
+	}
+}
+
+void CManageDlg::OnUpdateCategoryLst()
+{
+	CString text;
+	soechin::sqlite_stmt stmt;
+	std::string selText, category;
+	int selIndex;
+
+	m_categoryLst.GetWindowText(text);
+	selText = (LPSTR)ATL::CT2A(text, CP_UTF8);
+
+	m_categoryLst.ResetContent();
+	selIndex = -1;
+
+	stmt.prepare(m_sqlite, "SELECT DISTINCT Category FROM WeaponsDB "
+		"ORDER BY Category;");
+
+	while (stmt.step())
+	{
+		stmt.column("Category", category);
+
+		if (selIndex < 0 && selText == category)
+		{
+			selIndex = m_categoryLst.GetCount();
+		}
+
+		text = (LPTSTR)ATL::CA2T(category.c_str(), CP_UTF8);
+		m_categoryLst.AddString(text);
+	}
+
+	stmt.finalize();
+
+	if (selIndex >= 0)
+	{
+		m_categoryLst.SetCurSel(selIndex);
+	}
+}
+
 void CManageDlg::OnBnClickedInsertBtn()
 {
 	CString text;
-	std::string selText, selRad;
+	soechin::sqlite_stmt stmt;
+	std::string name;
 	int selIndex;
-	bool found;
-
-	if (m_primaryRad.GetCheck() == BST_CHECKED) selRad = "Weapons1";
-	else if (m_secondaryRad.GetCheck() == BST_CHECKED) selRad = "Weapons2";
-	else return;
 
 	if ((selIndex = m_weaponLst2.GetCurSel()) >= 0)
 	{
 		m_weaponLst2.GetText(selIndex, text);
-		selText = (LPSTR)ATL::CT2A(text, CP_UTF8);
+		name = (LPSTR)ATL::CT2A(text, CP_UTF8);
 	}
 
-	if (!m_json["Weapons"][selText].is_null())
+	if (name.empty())
 	{
-		found = false;
-
-		for (std::string name : m_json[selRad])
-		{
-			if (name == selText)
-			{
-				found = true;
-				break;
-			}
-		}
-
-		if (!found)
-		{
-			m_json[selRad].push_back(selText);
-		}
+		return;
 	}
+
+	if (m_primaryRad.GetCheck() == BST_CHECKED)
+	{
+		stmt.prepare(m_sqlite, "INSERT OR REPLACE INTO Weapons1 "
+			"(Name) VALUES (@name);");
+	}
+	else if (m_secondaryRad.GetCheck() == BST_CHECKED)
+	{
+		stmt.prepare(m_sqlite, "INSERT OR REPLACE INTO Weapons2 "
+			"(Name) VALUES (@name);");
+	}
+	else
+	{
+		return;
+	}
+
+	stmt.bind("@name", name);
+	stmt.step();
+	stmt.finalize();
 
 	// refresh
-	OnBnClickedSecondaryRad();
+	OnUpdateWeaponLst1();
 }
 
 void CManageDlg::OnBnClickedRemoveBtn()
 {
 	CString text;
-	std::string selText, selRad;
-	nlohmann::json weapons;
+	soechin::sqlite_stmt stmt;
+	std::string name;
 	int selIndex;
-	bool found;
-
-	if (m_primaryRad.GetCheck() == BST_CHECKED) selRad = "Weapons1";
-	else if (m_secondaryRad.GetCheck() == BST_CHECKED) selRad = "Weapons2";
-	else return;
 
 	if ((selIndex = m_weaponLst1.GetCurSel()) >= 0)
 	{
 		m_weaponLst1.GetText(selIndex, text);
-		selText = (LPSTR)ATL::CT2A(text, CP_UTF8);
+		name = (LPSTR)ATL::CT2A(text, CP_UTF8);
 	}
 
-	for (std::string name : m_json[selRad])
+	if (name.empty())
 	{
-		if (name != selText)
-		{
-			weapons.push_back(name);
-		}
+		return;
 	}
 
-	m_json[selRad] = weapons;
+	if (m_primaryRad.GetCheck() == BST_CHECKED)
+	{
+		stmt.prepare(m_sqlite, "DELETE FROM Weapons1 WHERE "
+			"Name = @name;");
+	}
+	else if (m_secondaryRad.GetCheck() == BST_CHECKED)
+	{
+		stmt.prepare(m_sqlite, "DELETE FROM Weapons2 WHERE "
+			"Name = @name;");
+	}
+	else
+	{
+		return;
+	}
+
+	stmt.bind("@name", name);
+	stmt.step();
+	stmt.finalize();
 
 	// refresh
-	OnBnClickedSecondaryRad();
+	OnUpdateWeaponLst1();
 }
 
 void CManageDlg::OnBnClickedImportBtn()
@@ -279,11 +305,12 @@ void CManageDlg::OnBnClickedImportBtn()
 	CFileDialog ofd(TRUE, NULL, NULL, OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST,
 		TEXT("JSON|*.json||"));
 	std::ifstream ifs;
-	std::string name, cat, faction;
-	nlohmann::json json, cats, factions, modes, mode, weapons, weapon;
-	nlohmann::json::iterator it, found;
+	std::string name, category, faction;
+	std::vector<std::string> categories, factions, modes;
+	nlohmann::json json, item, mode, modej;
+	soechin::sqlite_stmt stmt;
 	double recoil, factor, angleMin, angleMax;
-	int burst, delay, speed;
+	int found, burst, delay, speed;
 
 	if (ofd.DoModal() != IDOK)
 	{
@@ -299,49 +326,87 @@ void CManageDlg::OnBnClickedImportBtn()
 		ifs.close();
 	}
 
-	cats = m_json["Categories"];
-	factions = m_json["Factions"];
-	modes = m_json["Modes"];
+	// DO NOT sort factions and modes
+	categories.push_back("Assault Rifle");
+	categories.push_back("Battle Rifle");
+	categories.push_back("Carbine");
+	categories.push_back("LMG");
+	categories.push_back("Pistol");
+	categories.push_back("SMG");
+	categories.push_back("Scout Rifle");
+	categories.push_back("Sniper Rifle");
 
-	for (nlohmann::json& i : json["item_list"])
+	factions.push_back("NS");
+	factions.push_back("VS");
+	factions.push_back("NC");
+	factions.push_back("TR");
+
+	modes.push_back("Auto");
+	modes.push_back("3x Burst");
+	modes.push_back("2x Burst");
+	modes.push_back("Semi-Auto");
+
+	for (int i = 0; i < (int)json["item_list"].size(); i++)
 	{
+		item = json["item_list"][i];
+
 		// name, category
-		if (!i["name"]["en"].is_string() ||
-			!i["item_category"]["name"]["en"].is_string())
+		if (!item["name"]["en"].is_string() ||
+			!item["item_category"]["name"]["en"].is_string())
 		{
 			continue;
 		}
 
-		name = i["name"]["en"].get<std::string>();
-		cat = i["item_category"]["name"]["en"].get<std::string>();
+		name = item["name"]["en"].get<std::string>();
+		category = item["item_category"]["name"]["en"].get<std::string>();
 
 		// category filter
-		if (std::find(cats.begin(), cats.end(), cat) == cats.end())
+		found = (int)categories.size();
+
+		for (int j = 0; j < (int)categories.size(); j++)
+		{
+			if (categories[j] == category)
+			{
+				found = j;
+				break;
+			}
+		}
+
+		if (found >= (int)categories.size())
 		{
 			continue;
 		}
 
 		// faction
-		if (i["faction_id"] == "1") faction = "VS";
-		else if (i["faction_id"] == "2") faction = "NC";
-		else if (i["faction_id"] == "3") faction = "TR";
-		else faction = "NS";
+		if (item["faction_id"] == "1") faction = factions[1];
+		else if (item["faction_id"] == "2") faction = factions[2];
+		else if (item["faction_id"] == "3") faction = factions[3];
+		else faction = factions[0];
 
 		// fire mode filter
-		found = modes.end();
+		found = (int)modes.size();
 
-		for (nlohmann::json& m : i["fire_mode"])
+		for (int j = 0; j < (int)item["fire_mode"].size(); j++)
 		{
-			it = std::find(modes.begin(), modes.end(), m["description"]["en"]);
+			modej = item["fire_mode"][j];
 
-			if (it < found && m["type"] == "primary")
+			if (modej["type"] != "primary")
 			{
-				mode = m["fire_mode_2"];
-				found = it;
+				continue;
+			}
+
+			for (int k = 0; k < found; k++)
+			{
+				if (modej["description"]["en"] == modes[k])
+				{
+					mode = modej["fire_mode_2"];
+					found = k;
+					break;
+				}
 			}
 		}
 
-		if (found == modes.end())
+		if (found >= (int)modes.size())
 		{
 			continue;
 		}
@@ -374,21 +439,26 @@ void CManageDlg::OnBnClickedImportBtn()
 		angleMin = std::stod(mode["recoil_angle_min"].get<std::string>());
 		angleMax = std::stod(mode["recoil_angle_max"].get<std::string>());
 
-		weapon["Category"] = cat;
-		weapon["Faction"] = faction;
-		weapon["Burst"] = burst;
-		weapon["Delay"] = delay;
-		weapon["Speed"] = (int)((double)(60 * 1000) / speed + 0.5);
-		weapon["Recoil"] = recoil;
-		weapon["Factor"] = factor;
-		weapon["AngleMin"] = angleMin;
-		weapon["AngleMax"] = angleMax;
-
-		weapons[name] = weapon;
+		// insert into database
+		stmt.prepare(m_sqlite, "INSERT OR REPLACE INTO WeaponsDB "
+			"(Name, Faction, Category, Speed, Recoil, Factor, "
+			"AngleMin, AngleMax, Burst, Delay) VALUES "
+			"(@name, @faction, @category, @speed, @recoil, @factor, "
+			"@angleMin, @angleMax, @burst, @delay);");
+		stmt.bind("@name", name);
+		stmt.bind("@faction", faction);
+		stmt.bind("@category", category);
+		stmt.bind("@speed", (int)((double)(60 * 1000) / speed + 0.5)); // ms -> rpm
+		stmt.bind("@recoil", recoil);
+		stmt.bind("@factor", factor);
+		stmt.bind("@angleMin", angleMin);
+		stmt.bind("@angleMax", angleMax);
+		stmt.bind("@burst", burst);
+		stmt.bind("@delay", (double)delay / 1000); // ms -> sec
+		stmt.step();
+		stmt.finalize();
 	}
 
-	m_json["Weapons"] = weapons;
-
 	// refresh
-	OnCbnSelchangeCategoryLst();
+	OnUpdateWeaponLst2();
 }

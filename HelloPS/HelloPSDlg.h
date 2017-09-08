@@ -1,6 +1,7 @@
 #pragma once
 
-#include "json.hpp"
+#include "sqlite.hpp"
+#include "afxwin.h"
 
 class CHelloPSDlg : public CDialogEx
 {
@@ -10,19 +11,20 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
-	virtual void ReadSettingFile();
-	virtual void WriteSettingFile();
+	virtual void OpenDatabase();
+	virtual void CloseDatabase();
 	afx_msg void OnBnClickedManageBtn();
-	afx_msg void OnCbnDropdownWeaponLst1();
-	afx_msg void OnCbnSelchangeWeaponLst1();
+	afx_msg void OnUpdateWeaponLst1();
+	afx_msg void OnUpdateWeaponLst2();
 private:
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_HELLOPS_DIALOG };
 #endif
 	HICON m_icon;
-	// json
-	CString m_path;
-	nlohmann::json m_json;
+	// database
+	soechin::sqlite m_sqlite;
 	// user interface
+	CButton m_manageBtn;
 	CComboBox m_weaponLst1;
+	CComboBox m_weaponLst2;
 };
