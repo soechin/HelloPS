@@ -16,6 +16,8 @@ public:
 	virtual void CloseDatabase();
 	virtual void ReadSetting(std::string key, std::string& value);
 	virtual void WriteSetting(std::string key, std::string value);
+	virtual LRESULT OnUpdateAction(WPARAM wParam, LPARAM lParam);
+	virtual LRESULT OnUpdateEnabled(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnBnClickedManageBtn();
 	afx_msg void OnListWeapons1();
 	afx_msg void OnListWeapons2();
@@ -29,11 +31,18 @@ public:
 	afx_msg void OnListSensitivity();
 	afx_msg void OnChangeDuration();
 	afx_msg void OnChangeSensitivity();
+	// timer/worker
+	static void __stdcall TimerFunc1(LPVOID lpParam, BOOLEAN bTimer);
+	static void __stdcall TimerFunc2(LPVOID lpParam, BOOLEAN bTimer);
+	virtual void TimerFunc1();
+	virtual void TimerFunc2();
+	virtual void MoveMouse(int dx, int dy);
 private:
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_HELLOPS_DIALOG };
 #endif
 	HICON m_icon;
+	CCriticalSection m_mutex;
 	// database
 	soechin::sqlite m_sqlite;
 	std::map<std::string, double> m_sights;
@@ -46,6 +55,38 @@ private:
 	std::string m_sensitivity1;
 	std::string m_sensitivity2;
 	std::string m_sensitivity3;
+	// timers
+	HANDLE m_timer1;
+	HANDLE m_timer2;
+	// states
+	LARGE_INTEGER x_freq;
+	LARGE_INTEGER x_tick;
+	int x_action;
+	bool x_enabled;
+	bool x_idle;
+	bool x_lbutton;
+	double x_fpow;
+	double x_fsin;
+	double x_fcos;
+	double x_remain;
+	int x_dx;
+	int x_dy;
+	// weapon data
+	double x_speed;
+	double x_recoil;
+	double x_factor;
+	double x_angleMin;
+	double x_angleMax;
+	double x_burst;
+	double x_delay;
+	// sight data
+	double x_zoom;
+	// settings
+	double x_sens;
+	double x_dura1;
+	double x_dura2;
+	double x_vert;
+	double x_horz;
 	// user interface
 	CButton m_manageBtn;
 	CComboBox m_weaponLst1;

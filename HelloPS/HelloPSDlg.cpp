@@ -2,13 +2,19 @@
 #include "HelloPS.h"
 #include "HelloPSDlg.h"
 #include "ManageDlg.h"
+#include <cmath>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+#define WM_UPDATE_ACTION (WM_APP + 1)
+#define WM_UPDATE_ENABLED (WM_APP + 2)
+
 BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
 	ON_WM_DESTROY()
+	ON_MESSAGE(WM_UPDATE_ACTION, &CHelloPSDlg::OnUpdateAction)
+	ON_MESSAGE(WM_UPDATE_ENABLED, &CHelloPSDlg::OnUpdateEnabled)
 	ON_BN_CLICKED(IDC_MANAGE_BTN, &CHelloPSDlg::OnBnClickedManageBtn)
 	ON_CBN_DROPDOWN(IDC_WEAPON_LST_1, &CHelloPSDlg::OnListWeapons1)
 	ON_CBN_DROPDOWN(IDC_WEAPON_LST_2, &CHelloPSDlg::OnListWeapons2)
@@ -80,12 +86,53 @@ BOOL CHelloPSDlg::OnInitDialog()
 	OnChangeDuration();
 	OnChangeSensitivity();
 
+	// create timers
+	CreateTimerQueueTimer(&m_timer1, NULL, TimerFunc1, this, 0, 100, WT_EXECUTEDEFAULT);
+	CreateTimerQueueTimer(&m_timer2, NULL, TimerFunc2, this, 0, 1, WT_EXECUTEDEFAULT);
+
+	// states
+	QueryPerformanceFrequency(&x_freq);
+	QueryPerformanceCounter(&x_tick);
+	x_action = 0;
+	x_enabled = false;
+	x_idle = false;
+	x_lbutton = false;
+	x_fpow = 0;
+	x_fsin = 0;
+	x_fcos = 0;
+	x_remain = 0;
+	x_dx = 0;
+	x_dy = 0;
+
+	// weapon data
+	x_speed = 0;
+	x_recoil = 0;
+	x_factor = 0;
+	x_angleMin = 0;
+	x_angleMax = 0;
+	x_burst = 0;
+	x_delay = 0;
+
+	// sight data
+	x_zoom = 1.0;
+
+	// settings
+	x_sens = 0.3;
+	x_dura1 = 0;
+	x_dura2 = 1;
+	x_vert = 1;
+	x_horz = 0;
+
 	return TRUE;
 }
 
 void CHelloPSDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
+
+	// delete timers
+	DeleteTimerQueueTimer(NULL, m_timer1, INVALID_HANDLE_VALUE);
+	DeleteTimerQueueTimer(NULL, m_timer2, INVALID_HANDLE_VALUE);
 
 	// close database
 	CloseDatabase();
@@ -191,6 +238,91 @@ void CHelloPSDlg::WriteSetting(std::string key, std::string value)
 	stmt.bind("@value", value);
 	stmt.step();
 	stmt.finalize();
+}
+
+LRESULT CHelloPSDlg::OnUpdateAction(WPARAM wParam, LPARAM lParam)
+{
+	CSingleLock locker(&m_mutex, TRUE);
+	std::string weapon, sight;
+	soechin::sqlite_stmt stmt;
+
+	if (x_action == 1)
+	{
+		weapon = m_weapon1;
+		sight = m_sight1;
+	}
+	else if (x_action == 2)
+	{
+		weapon = m_weapon2;
+		sight = m_sight2;
+	}
+
+	if (weapon.empty() || sight.empty())
+	{
+		return 0;
+	}
+
+	// weapon data
+	stmt.prepare(&m_sqlite, "SELECT Speed, Recoil, Factor, "
+		"AngleMin, AngleMax, Burst, Delay FROM WeaponsDB WHERE "
+		"Name = @name;");
+	stmt.bind("@name", weapon);
+
+	if (stmt.step())
+	{
+		stmt.column("Speed", x_speed);
+		stmt.column("Recoil", x_recoil);
+		stmt.column("Factor", x_factor);
+		stmt.column("AngleMin", x_angleMin);
+		stmt.column("AngleMax", x_angleMax);
+		stmt.column("Burst", x_burst);
+		stmt.column("Delay", x_delay);
+	}
+
+	stmt.finalize();
+
+	// sight data
+	x_zoom = m_sights[sight];
+
+	// settings
+	try
+	{
+		if (x_zoom <= 1) x_sens = std::stod(m_sensitivity1);
+		else if (x_zoom <= 2) x_sens = std::stod(m_sensitivity2);
+		else x_sens = std::stod(m_sensitivity3);
+	}
+	catch (const std::exception&)
+	{
+		x_sens = 0;
+	}
+
+	try
+	{
+		x_dura1 = std::stod(m_duration1);
+		x_dura2 = std::stod(m_duration2);
+	}
+	catch (const std::exception&)
+	{
+		x_dura1 = 0;
+		x_dura2 = 1;
+	}
+
+	return 0;
+}
+
+LRESULT CHelloPSDlg::OnUpdateEnabled(WPARAM wParam, LPARAM lParam)
+{
+	CSingleLock locker(&m_mutex, TRUE);
+
+	m_manageBtn.EnableWindow(!x_enabled);
+	m_durationEdt1.EnableWindow(!x_enabled);
+	m_durationEdt2.EnableWindow(!x_enabled);
+	m_sensitivityEdt1.EnableWindow(!x_enabled);
+	m_sensitivityEdt2.EnableWindow(!x_enabled);
+	m_sensitivityEdt3.EnableWindow(!x_enabled);
+
+	OnUpdateAction(wParam, lParam);
+	return 0;
 }
 
 void CHelloPSDlg::OnBnClickedManageBtn()
@@ -344,6 +476,9 @@ void CHelloPSDlg::OnChangeWeapons1()
 
 	m_weaponLst1.GetWindowText(text);
 	m_weapon1 = (LPSTR)ATL::CT2A(text, CP_UTF8);
+
+	// update action
+	PostMessage(WM_UPDATE_ACTION);
 }
 
 void CHelloPSDlg::OnChangeWeapons2()
@@ -352,6 +487,9 @@ void CHelloPSDlg::OnChangeWeapons2()
 
 	m_weaponLst2.GetWindowText(text);
 	m_weapon2 = (LPSTR)ATL::CT2A(text, CP_UTF8);
+
+	// update action
+	PostMessage(WM_UPDATE_ACTION);
 }
 
 void CHelloPSDlg::OnChangeSights1()
@@ -360,6 +498,9 @@ void CHelloPSDlg::OnChangeSights1()
 
 	m_sightLst1.GetWindowText(text);
 	m_sight1 = (LPSTR)ATL::CT2A(text, CP_UTF8);
+
+	// update action
+	PostMessage(WM_UPDATE_ACTION);
 }
 
 void CHelloPSDlg::OnChangeSights2()
@@ -368,6 +509,9 @@ void CHelloPSDlg::OnChangeSights2()
 
 	m_sightLst2.GetWindowText(text);
 	m_sight2 = (LPSTR)ATL::CT2A(text, CP_UTF8);
+
+	// update action
+	PostMessage(WM_UPDATE_ACTION);
 }
 
 void CHelloPSDlg::OnListDuration()
@@ -418,4 +562,218 @@ void CHelloPSDlg::OnChangeSensitivity()
 
 	m_sensitivityEdt3.GetWindowText(text);
 	m_sensitivity3 = (LPSTR)ATL::CT2A(text, CP_UTF8);
+}
+
+void __stdcall CHelloPSDlg::TimerFunc1(LPVOID lpParam, BOOLEAN bTimer)
+{
+	if (lpParam != NULL && bTimer)
+	{
+		((CHelloPSDlg*)lpParam)->TimerFunc1();
+	}
+}
+
+void __stdcall CHelloPSDlg::TimerFunc2(LPVOID lpParam, BOOLEAN bTimer)
+{
+	if (lpParam != NULL && bTimer)
+	{
+		((CHelloPSDlg*)lpParam)->TimerFunc2();
+	}
+}
+
+void CHelloPSDlg::TimerFunc1()
+{
+	if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0)
+	{
+		if ((GetAsyncKeyState(VK_F1) & 0x8000) != 0) // ALT-F1
+		{
+			CSingleLock locker(&m_mutex, TRUE);
+
+			if (!x_enabled)
+			{
+				x_enabled = true;
+				PostMessage(WM_UPDATE_ENABLED);
+			}
+		}
+		else if ((GetAsyncKeyState(VK_F2) & 0x8000) != 0) // ALT-F2
+		{
+			CSingleLock locker(&m_mutex, TRUE);
+
+			if (x_enabled)
+			{
+				x_enabled = false;
+				PostMessage(WM_UPDATE_ENABLED);
+			}
+		}
+	}
+	else if ((GetAsyncKeyState(0xc0) & 0x8000) != 0) // '`'
+	{
+		CSingleLock locker(&m_mutex, TRUE);
+
+		if (x_action != 0)
+		{
+			x_action = 0;
+			PostMessage(WM_UPDATE_ACTION);
+		}
+	}
+	else if ((GetAsyncKeyState(0x31) & 0x8000) != 0) // '1'
+	{
+		CSingleLock locker(&m_mutex, TRUE);
+
+		if (x_action != 1)
+		{
+			x_action = 1;
+			PostMessage(WM_UPDATE_ACTION);
+		}
+	}
+	else if ((GetAsyncKeyState(0x32) & 0x8000) != 0) // '2'
+	{
+		CSingleLock locker(&m_mutex, TRUE);
+
+		if (x_action != 2)
+		{
+			x_action = 2;
+			PostMessage(WM_UPDATE_ACTION);
+		}
+	}
+}
+
+void CHelloPSDlg::TimerFunc2()
+{
+	CSingleLock locker(&m_mutex, TRUE);
+	CURSORINFO cursor;
+	LARGE_INTEGER tick;
+	bool lbutton;
+	double time, limit, num, dec, dz;
+	int dx, dy, ox, oy;
+
+	// check action
+	if ((x_action != 1 && x_action != 2) || !x_enabled)
+	{
+		return;
+	}
+
+	// lbutton down
+	lbutton = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+
+	// first shot
+	if (lbutton && !x_lbutton)
+	{
+		// idle
+		x_idle = false;
+
+		// check lshift
+		if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0)
+		{
+			x_idle = true;
+		}
+
+		// check cursor
+		memset(&cursor, 0, sizeof(cursor));
+		cursor.cbSize = sizeof(cursor);
+
+		if (GetCursorInfo(&cursor))
+		{
+			if ((cursor.flags & CURSOR_SHOWING) != 0)
+			{
+				x_idle = true;
+			}
+		}
+
+		// time begin
+		QueryPerformanceCounter(&x_tick);
+
+		// S: mouse sensivisity
+		// Z: zoom level
+		// Z': zoom level > 1 ? 1.6 : 1
+		// A1: min recoil angle
+		// A2: max recoil angle
+		// F = (11.7581 / (S + 0.3)) ^ 3 * Z * Z' / 2.54 / 360
+		x_fpow = pow(11.7581 / (x_sens + 0.3), 3) * x_zoom * (x_zoom > 1 ? 1.6 : 1) / 2.54 / 360;
+		// Fsin = sin((A1 + A2) / 2 * PI / 180)
+		x_fsin = sin(((x_angleMin + x_angleMax) / 2) * M_PI / 180);
+		// Fcos = cos(((|A1| + |A2|) / 2) * PI / 180)
+		x_fcos = cos(((abs(x_angleMin) + abs(x_angleMax)) / 2) * M_PI / 180);
+
+		// reset burst
+		x_remain = 0;
+
+		// reset offsets
+		x_dx = 0;
+		x_dy = 0;
+	}
+
+	// backup lbutton state
+	x_lbutton = lbutton;
+
+	// abort
+	if (x_idle)
+	{
+		return;
+	}
+
+	// lbutton down
+	if (lbutton || x_remain > 0)
+	{
+		// time end
+		QueryPerformanceCounter(&tick);
+		time = (double)(tick.QuadPart - x_tick.QuadPart) / x_freq.QuadPart;
+
+		// delay
+		time = std::max(time - x_delay, 0.0);
+
+		// time limit(for burst mode)
+		if (x_burst > 0)
+		{
+			limit = x_burst / (x_speed / 60);
+
+			// time limit
+			if (time > limit)
+			{
+				time = limit;
+			}
+
+			// time remaining
+			x_remain = limit - time;
+		}
+
+		// number of shots
+		num = time * x_speed / 60;
+
+		// new number
+		dec = num - floor(num);
+		dec = (dec - x_dura1) / (x_dura2 - x_dura1);
+		num = floor(num) + std::min(std::max(dec, 0.0), 1.0);
+
+		// distance to recoil center
+		dz = (x_factor * std::min(num, 1.0) + std::max(num - 1, 0.0)) * x_recoil * x_fpow;
+
+		// hypotenuse to opposite and adjacent
+		dx = (int)(dz * x_fsin * x_horz);
+		dy = (int)(dz * x_fcos * x_vert);
+
+		// move mouse
+		if (x_dx != dx || x_dy != dy)
+		{
+			ox = (x_dx < dx) ? 1 : (x_dx > dx) ? -1 : 0;
+			oy = (x_dy < dy) ? 1 : (x_dy > dy) ? -1 : 0;
+			if (ox != 0) ox *= std::min((int)sqrt(abs(x_dx - dx)), 3);
+			if (oy != 0) oy *= std::min((int)sqrt(abs(x_dy - dy)), 3);
+			MoveMouse(-ox, oy);
+			x_dx += ox;
+			x_dy += oy;
+		}
+	}
+}
+
+void CHelloPSDlg::MoveMouse(int dx, int dy)
+{
+	INPUT input;
+
+	memset(&input, 0, sizeof(input));
+	input.type = INPUT_MOUSE;
+	input.mi.dx = dx;
+	input.mi.dy = dy;
+	input.mi.dwFlags = MOUSEEVENTF_MOVE;
+
+	SendInput(1, &input, sizeof(input));
 }
