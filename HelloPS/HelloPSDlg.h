@@ -68,6 +68,7 @@ private:
 	double x_fpow;
 	double x_fsin;
 	double x_fcos;
+	double x_limit;
 	double x_remain;
 	int x_dx;
 	int x_dy;

@@ -100,6 +100,7 @@ BOOL CHelloPSDlg::OnInitDialog()
 	x_fpow = 0;
 	x_fsin = 0;
 	x_fcos = 0;
+	x_limit = 0;
 	x_remain = 0;
 	x_dx = 0;
 	x_dy = 0;
@@ -643,7 +644,7 @@ void CHelloPSDlg::TimerFunc2()
 	CURSORINFO cursor;
 	LARGE_INTEGER tick;
 	bool lbutton;
-	double time, limit, num, dec, dz;
+	double time, num, dec, dz;
 	int dx, dy, ox, oy;
 
 	// check action
@@ -675,7 +676,7 @@ void CHelloPSDlg::TimerFunc2()
 		{
 			if ((cursor.flags & CURSOR_SHOWING) != 0)
 			{
-				x_idle = true;
+				//x_idle = true;
 			}
 		}
 
@@ -695,6 +696,7 @@ void CHelloPSDlg::TimerFunc2()
 		x_fcos = cos(((abs(x_angleMin) + abs(x_angleMax)) / 2) * M_PI / 180);
 
 		// reset burst
+		x_limit = 0;
 		x_remain = 0;
 
 		// reset offsets
@@ -724,16 +726,16 @@ void CHelloPSDlg::TimerFunc2()
 		// time limit(for burst mode)
 		if (x_burst > 0)
 		{
-			limit = x_burst / (x_speed / 60);
+			x_limit = x_burst / (x_speed / 60);
 
 			// time limit
-			if (time > limit)
+			if (time > x_limit)
 			{
-				time = limit;
+				time = x_limit;
 			}
 
 			// time remaining
-			x_remain = limit - time;
+			x_remain = x_limit - time;
 		}
 
 		// number of shots
@@ -743,6 +745,22 @@ void CHelloPSDlg::TimerFunc2()
 		dec = num - floor(num);
 		dec = (dec - x_dura1) / (x_dura2 - x_dura1);
 		num = floor(num) + std::min(std::max(dec, 0.0), 1.0);
+
+		// number limit(for normal mode)
+		if (x_burst <= 0)
+		{
+			if (lbutton)
+			{
+				x_limit = ceil(num);
+			}
+
+			if (num > x_limit)
+			{
+				num = x_limit;
+			}
+
+			x_remain = x_limit - num;
+		}
 
 		// distance to recoil center
 		dz = (x_factor * std::min(num, 1.0) + std::max(num - 1, 0.0)) * x_recoil * x_fpow;
