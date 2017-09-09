@@ -676,7 +676,9 @@ void CHelloPSDlg::TimerFunc2()
 		{
 			if ((cursor.flags & CURSOR_SHOWING) != 0)
 			{
-				//x_idle = true;
+#ifndef _DEBUG
+				x_idle = true;
+#endif
 			}
 		}
 
@@ -745,22 +747,6 @@ void CHelloPSDlg::TimerFunc2()
 		dec = num - floor(num);
 		dec = (dec - x_dura1) / (x_dura2 - x_dura1);
 		num = floor(num) + std::min(std::max(dec, 0.0), 1.0);
-
-		// number limit(for normal mode)
-		if (x_burst <= 0)
-		{
-			if (lbutton)
-			{
-				x_limit = ceil(num);
-			}
-
-			if (num > x_limit)
-			{
-				num = x_limit;
-			}
-
-			x_remain = x_limit - num;
-		}
 
 		// distance to recoil center
 		dz = (x_factor * std::min(num, 1.0) + std::max(num - 1, 0.0)) * x_recoil * x_fpow;
