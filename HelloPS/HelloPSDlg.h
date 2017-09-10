@@ -29,8 +29,10 @@ public:
 	afx_msg void OnChangeSights2();
 	afx_msg void OnListDuration();
 	afx_msg void OnListSensitivity();
+	afx_msg void OnListDelay();
 	afx_msg void OnChangeDuration();
 	afx_msg void OnChangeSensitivity();
+	afx_msg void OnChangeDelay();
 	// timer/worker
 	static void __stdcall TimerFunc1(LPVOID lpParam, BOOLEAN bTimer);
 	static void __stdcall TimerFunc2(LPVOID lpParam, BOOLEAN bTimer);
@@ -55,6 +57,8 @@ private:
 	std::string m_sensitivity1;
 	std::string m_sensitivity2;
 	std::string m_sensitivity3;
+	std::string m_framerate;
+	std::string m_frames;
 	// timers
 	HANDLE m_timer1;
 	HANDLE m_timer2;
@@ -88,6 +92,8 @@ private:
 	double x_dura2;
 	double x_vert;
 	double x_horz;
+	double x_framerate;
+	double x_frames;
 	// user interface
 	CButton m_manageBtn;
 	CComboBox m_weaponLst1;
@@ -99,4 +105,6 @@ private:
 	CEdit m_sensitivityEdt1;
 	CEdit m_sensitivityEdt2;
 	CEdit m_sensitivityEdt3;
+	CEdit m_framerateEdt;
+	CEdit m_framesEdt;
 };

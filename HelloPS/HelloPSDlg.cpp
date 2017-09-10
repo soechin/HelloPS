@@ -29,6 +29,8 @@ BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
 	ON_EN_KILLFOCUS(IDC_SENSITIVITY_EDT_1, &CHelloPSDlg::OnChangeSensitivity)
 	ON_EN_KILLFOCUS(IDC_SENSITIVITY_EDT_2, &CHelloPSDlg::OnChangeSensitivity)
 	ON_EN_KILLFOCUS(IDC_SENSITIVITY_EDT_3, &CHelloPSDlg::OnChangeSensitivity)
+	ON_EN_KILLFOCUS(IDC_FRAMERATE_EDT, &CHelloPSDlg::OnChangeDelay)
+	ON_EN_KILLFOCUS(IDC_FRAMES_EDT, &CHelloPSDlg::OnChangeDelay)
 END_MESSAGE_MAP()
 
 CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG)
@@ -48,6 +50,8 @@ void CHelloPSDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SENSITIVITY_EDT_1, m_sensitivityEdt1);
 	DDX_Control(pDX, IDC_SENSITIVITY_EDT_2, m_sensitivityEdt2);
 	DDX_Control(pDX, IDC_SENSITIVITY_EDT_3, m_sensitivityEdt3);
+	DDX_Control(pDX, IDC_FRAMERATE_EDT, m_framerateEdt);
+	DDX_Control(pDX, IDC_FRAMES_EDT, m_framesEdt);
 }
 
 BOOL CHelloPSDlg::OnInitDialog()
@@ -78,6 +82,7 @@ BOOL CHelloPSDlg::OnInitDialog()
 	OnListSights2();
 	OnListDuration();
 	OnListSensitivity();
+	OnListDelay();
 
 	OnChangeWeapons1();
 	OnChangeWeapons2();
@@ -85,6 +90,7 @@ BOOL CHelloPSDlg::OnInitDialog()
 	OnChangeSights2();
 	OnChangeDuration();
 	OnChangeSensitivity();
+	OnChangeDelay();
 
 	// create timers
 	CreateTimerQueueTimer(&m_timer1, NULL, TimerFunc1, this, 0, 100, WT_EXECUTEDEFAULT);
@@ -123,6 +129,8 @@ BOOL CHelloPSDlg::OnInitDialog()
 	x_dura2 = 1;
 	x_vert = 1;
 	x_horz = 0;
+	x_framerate = 100;
+	x_frames = 2;
 
 	return TRUE;
 }
@@ -182,6 +190,8 @@ void CHelloPSDlg::OpenDatabase()
 	ReadSetting("Sensitivity1", m_sensitivity1);
 	ReadSetting("Sensitivity2", m_sensitivity2);
 	ReadSetting("Sensitivity3", m_sensitivity3);
+	ReadSetting("Framerate", m_framerate);
+	ReadSetting("Frames", m_frames);
 }
 
 void CHelloPSDlg::CloseDatabase()
@@ -196,6 +206,8 @@ void CHelloPSDlg::CloseDatabase()
 	WriteSetting("Sensitivity1", m_sensitivity1);
 	WriteSetting("Sensitivity2", m_sensitivity2);
 	WriteSetting("Sensitivity3", m_sensitivity3);
+	WriteSetting("Framerate", m_framerate);
+	WriteSetting("Frames", m_frames);
 
 	m_sqlite.exec("VACUUM;");
 	m_sqlite.close();
@@ -288,11 +300,20 @@ LRESULT CHelloPSDlg::OnUpdateAction(WPARAM wParam, LPARAM lParam)
 	// settings
 	try
 	{
-		if (x_zoom <= 1) x_sens = std::stod(m_sensitivity1);
-		else if (x_zoom <= 2) x_sens = std::stod(m_sensitivity2);
-		else x_sens = std::stod(m_sensitivity3);
+		if (x_zoom <= 1)
+		{
+			x_sens = std::stod(m_sensitivity1);
+		}
+		else if (x_zoom <= 2)
+		{
+			x_sens = std::stod(m_sensitivity2);
+		}
+		else
+		{
+			x_sens = std::stod(m_sensitivity3);
+		}
 	}
-	catch (const std::exception&)
+	catch (...)
 	{
 		x_sens = 0;
 	}
@@ -302,10 +323,21 @@ LRESULT CHelloPSDlg::OnUpdateAction(WPARAM wParam, LPARAM lParam)
 		x_dura1 = std::stod(m_duration1);
 		x_dura2 = std::stod(m_duration2);
 	}
-	catch (const std::exception&)
+	catch (...)
 	{
 		x_dura1 = 0;
 		x_dura2 = 1;
+	}
+
+	try
+	{
+		x_framerate = std::stod(m_framerate);
+		x_frames = std::stod(m_frames);
+	}
+	catch (...)
+	{
+		x_framerate = 100;
+		x_frames = 2;
 	}
 
 	return 0;
@@ -315,12 +347,13 @@ LRESULT CHelloPSDlg::OnUpdateEnabled(WPARAM wParam, LPARAM lParam)
 {
 	CSingleLock locker(&m_mutex, TRUE);
 
-	m_manageBtn.EnableWindow(!x_enabled);
 	m_durationEdt1.EnableWindow(!x_enabled);
 	m_durationEdt2.EnableWindow(!x_enabled);
 	m_sensitivityEdt1.EnableWindow(!x_enabled);
 	m_sensitivityEdt2.EnableWindow(!x_enabled);
 	m_sensitivityEdt3.EnableWindow(!x_enabled);
+	m_framerateEdt.EnableWindow(!x_enabled);
+	m_framesEdt.EnableWindow(!x_enabled);
 
 	OnUpdateAction(wParam, lParam);
 	return 0;
@@ -540,6 +573,17 @@ void CHelloPSDlg::OnListSensitivity()
 	m_sensitivityEdt3.SetWindowText(text);
 }
 
+void CHelloPSDlg::OnListDelay()
+{
+	CString text;
+
+	text = (LPTSTR)ATL::CA2T(m_framerate.c_str(), CP_UTF8);
+	m_framerateEdt.SetWindowText(text);
+
+	text = (LPTSTR)ATL::CA2T(m_frames.c_str(), CP_UTF8);
+	m_framesEdt.SetWindowText(text);
+}
+
 void CHelloPSDlg::OnChangeDuration()
 {
 	CString text;
@@ -563,6 +607,17 @@ void CHelloPSDlg::OnChangeSensitivity()
 
 	m_sensitivityEdt3.GetWindowText(text);
 	m_sensitivity3 = (LPSTR)ATL::CT2A(text, CP_UTF8);
+}
+
+void CHelloPSDlg::OnChangeDelay()
+{
+	CString text;
+
+	m_framerateEdt.GetWindowText(text);
+	m_framerate = (LPSTR)ATL::CT2A(text, CP_UTF8);
+
+	m_framesEdt.GetWindowText(text);
+	m_frames = (LPSTR)ATL::CT2A(text, CP_UTF8);
 }
 
 void __stdcall CHelloPSDlg::TimerFunc1(LPVOID lpParam, BOOLEAN bTimer)
@@ -644,7 +699,7 @@ void CHelloPSDlg::TimerFunc2()
 	CURSORINFO cursor;
 	LARGE_INTEGER tick;
 	bool lbutton;
-	double time, num, dec, dz;
+	double ifps, ishot, time, num, intp, frac, dz;
 	int dx, dy, ox, oy;
 
 	// check action
@@ -722,13 +777,19 @@ void CHelloPSDlg::TimerFunc2()
 		QueryPerformanceCounter(&tick);
 		time = (double)(tick.QuadPart - x_tick.QuadPart) / x_freq.QuadPart;
 
+		// fps interval
+		ifps = 1 / x_framerate;
+
+		// shot interval
+		ishot = 60 / x_speed;
+
 		// delay
-		time = std::max(time - x_delay, 0.0);
+		time = std::max(time - x_delay - ifps, 0.0);
 
 		// time limit(for burst mode)
 		if (x_burst > 0)
 		{
-			x_limit = x_burst / (x_speed / 60);
+			x_limit = x_burst * ishot;
 
 			// time limit
 			if (time > x_limit)
@@ -741,12 +802,28 @@ void CHelloPSDlg::TimerFunc2()
 		}
 
 		// number of shots
-		num = time * x_speed / 60;
+		num = time / ishot;
+		frac = std::modf(num, &intp);
+
+		if (x_burst <= 0)
+		{
+			if (lbutton)
+			{
+				x_limit = frac > std::min(ifps / ishot * x_frames, 1.0) ? ceil(num) : num;
+			}
+
+			if (num > x_limit)
+			{
+				num = x_limit;
+				frac = std::modf(num, &intp);
+			}
+
+			x_remain = x_limit - num;
+		}
 
 		// new number
-		dec = num - floor(num);
-		dec = (dec - x_dura1) / (x_dura2 - x_dura1);
-		num = floor(num) + std::min(std::max(dec, 0.0), 1.0);
+		frac = (frac - x_dura1) / (x_dura2 - x_dura1);
+		num = intp + std::min(std::max(frac, 0.0), 1.0);
 
 		// distance to recoil center
 		dz = (x_factor * std::min(num, 1.0) + std::max(num - 1, 0.0)) * x_recoil * x_fpow;
