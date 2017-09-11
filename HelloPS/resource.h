@@ -22,8 +22,8 @@
 #define IDC_SENSITIVITY_EDT_1           1015
 #define IDC_SENSITIVITY_EDT_2           1016
 #define IDC_SENSITIVITY_EDT_3           1017
-#define IDC_FRAMERATE_EDT               1018
-#define IDC_FRAMES_EDT                  1019
+#define IDC_DELAY_EDT_1                 1018
+#define IDC_DELAY_EDT_2                 1019
 
 // Next default values for new objects
 // 
