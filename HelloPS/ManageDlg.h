@@ -10,13 +10,18 @@ public:
 	CManageDlg(soechin::sqlite* sqlite);
 	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual BOOL OnInitDialog();
-	afx_msg void OnListWeapons1();
-	afx_msg void OnListWeapons2();
-	afx_msg void OnListFactions();
-	afx_msg void OnListCategories();
+	virtual void UIFromDatabase();
+	virtual void ReadSetting(std::string key, std::string& value);
+	virtual void WriteSetting(std::string key, std::string value);
+	virtual void ReloadWeaponLst1();
+	virtual void ReloadWeaponLst2();
+	afx_msg void OnBnClickedPrimaryRad();
+	afx_msg void OnBnClickedSecondaryRad();
 	afx_msg void OnBnClickedInsertBtn();
 	afx_msg void OnBnClickedRemoveBtn();
 	afx_msg void OnBnClickedImportBtn();
+	afx_msg void OnCbnSelchangeFactionLst();
+	afx_msg void OnCbnSelchangeCategoryLst();
 private:
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MANAGE_DIALOG };
@@ -26,11 +31,11 @@ private:
 	// user interface
 	CButton m_primaryRad;
 	CButton m_secondaryRad;
+	CButton m_insertBtn;
+	CButton m_removeBtn;
+	CButton m_importBtn;
 	CComboBox m_factionLst;
 	CComboBox m_categoryLst;
 	CListBox m_weaponLst1;
 	CListBox m_weaponLst2;
-	CButton m_insertBtn;
-	CButton m_removeBtn;
-	CButton m_importBtn;
 };
