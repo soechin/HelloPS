@@ -525,7 +525,7 @@ void CManageDlg::OnBnClickedImportBtn()
 	// cleanup
 	stmt.finalize();
 
-	ReloadWeaponLst2();
+	UIFromDatabase();
 }
 
 void CManageDlg::OnCbnSelchangeFactionLst()

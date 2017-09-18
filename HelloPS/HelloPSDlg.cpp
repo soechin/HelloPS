@@ -220,6 +220,35 @@ void CHelloPSDlg::UIFromDatabase()
 		m_weaponLst1.SetCurSel(index);
 	}
 
+	// primary sight
+	ReadSetting("Sight: " + weapon, sight);
+
+	m_sightLst1.ResetContent();
+	index = -1;
+
+	stmt.prepare(&m_sqlite, "SELECT Name FROM Sights "
+		"ORDER BY Name");
+
+	while (stmt.step())
+	{
+		stmt.column("Name", name);
+
+		if (index < 0 && name == sight)
+		{
+			index = m_sightLst1.GetCount();
+		}
+
+		text = (LPTSTR)ATL::CA2T(name.c_str(), CP_UTF8);
+		m_sightLst1.AddString(text);
+	}
+
+	stmt.finalize();
+
+	if (index >= 0)
+	{
+		m_sightLst1.SetCurSel(index);
+	}
+
 	// secondary weapon
 	ReadSetting("Weapon2", weapon);
 
@@ -248,38 +277,9 @@ void CHelloPSDlg::UIFromDatabase()
 	{
 		m_weaponLst2.SetCurSel(index);
 	}
-
-	// primary sight
-	ReadSetting("Sight1", sight);
-
-	m_sightLst1.ResetContent();
-	index = -1;
-
-	stmt.prepare(&m_sqlite, "SELECT Name FROM Sights "
-		"ORDER BY Name");
-
-	while (stmt.step())
-	{
-		stmt.column("Name", name);
-
-		if (index < 0 && name == sight)
-		{
-			index = m_sightLst1.GetCount();
-		}
-
-		text = (LPTSTR)ATL::CA2T(name.c_str(), CP_UTF8);
-		m_sightLst1.AddString(text);
-	}
-
-	stmt.finalize();
-
-	if (index >= 0)
-	{
-		m_sightLst1.SetCurSel(index);
-	}
-
+	
 	// secondary sight
-	ReadSetting("Sight2", sight);
+	ReadSetting("Sight: " + weapon, sight);
 
 	m_sightLst2.ResetContent();
 	index = -1;
@@ -510,8 +510,9 @@ void CHelloPSDlg::OnCbnSelchangeWeaponLst1()
 
 	m_weaponLst1.GetWindowText(text);
 	weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
-	WriteSetting("Weapon1", weapon);
 
+	WriteSetting("Weapon1", weapon);
+	UIFromDatabase();
 	OnUpdateAction();
 }
 
@@ -522,19 +523,27 @@ void CHelloPSDlg::OnCbnSelchangeWeaponLst2()
 
 	m_weaponLst2.GetWindowText(text);
 	weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
-	WriteSetting("Weapon2", weapon);
 
+	WriteSetting("Weapon2", weapon);
+	UIFromDatabase();
 	OnUpdateAction();
 }
 
 void CHelloPSDlg::OnCbnSelchangeSightLst1()
 {
 	CString text;
-	std::string sight;
+	std::string weapon, sight;
+
+	m_weaponLst1.GetWindowText(text);
+	weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
 	m_sightLst1.GetWindowText(text);
 	sight = (LPSTR)ATL::CT2A(text, CP_UTF8);
-	WriteSetting("Sight1", sight);
+
+	if (!weapon.empty())
+	{
+		WriteSetting("Sight: " + weapon, sight);
+	}
 
 	OnUpdateAction();
 }
@@ -542,11 +551,18 @@ void CHelloPSDlg::OnCbnSelchangeSightLst1()
 void CHelloPSDlg::OnCbnSelchangeSightLst2()
 {
 	CString text;
-	std::string sight;
+	std::string weapon, sight;
+
+	m_weaponLst2.GetWindowText(text);
+	weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
 	m_sightLst2.GetWindowText(text);
 	sight = (LPSTR)ATL::CT2A(text, CP_UTF8);
-	WriteSetting("Sight2", sight);
+
+	if (!weapon.empty())
+	{
+		WriteSetting("Sight: " + weapon, sight);
+	}
 
 	OnUpdateAction();
 }
@@ -749,8 +765,8 @@ void CHelloPSDlg::TimerFunc2()
 #ifndef _DEBUG
 				m_idle = true;
 #endif
+			}
 		}
-	}
 
 		// time begin
 		QueryPerformanceCounter(&m_tick);
@@ -775,7 +791,7 @@ void CHelloPSDlg::TimerFunc2()
 		// reset offsets
 		m_dx = 0;
 		m_dy = 0;
-}
+	}
 
 	// backup lbutton state
 	m_lbutton = lbutton;

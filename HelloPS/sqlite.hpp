@@ -6,32 +6,6 @@
 
 namespace soechin
 {
-	class sqlite_error : public std::exception
-	{
-	private:
-		int m_code;
-	public:
-		sqlite_error()
-		{
-			m_code = 0;
-		}
-
-		sqlite_error(int code)
-		{
-			m_code = code;
-		}
-
-		virtual int code() const
-		{
-			return m_code;
-		}
-
-		virtual const char* what() const
-		{
-			return sqlite3_errstr(m_code);
-		}
-	};
-
 	class sqlite
 	{
 	private:
@@ -58,38 +32,48 @@ namespace soechin
 			return m_db;
 		}
 
-		virtual void open(std::string path)
+		virtual bool open(std::string path)
 		{
 			int ret;
 
 			close();
 
 			ret = sqlite3_open(path.c_str(), &m_db);
-			if (ret != SQLITE_OK) throw sqlite_error(ret);
+			if (ret != SQLITE_OK) return false;
 
 			ret = sqlite3_busy_handler(m_db, busy_handler, this);
-			if (ret != SQLITE_OK) throw sqlite_error(ret);
+			if (ret != SQLITE_OK) return false;
+
+			return true;
 		}
 
 		virtual void close()
 		{
-			int ret;
-
 			if (m_db != NULL)
 			{
-				ret = sqlite3_close(m_db);
-				if (ret != SQLITE_OK) throw sqlite_error(ret);
-
+				sqlite3_close(m_db);
 				m_db = NULL;
 			}
 		}
 
-		virtual void exec(std::string sql)
+		virtual bool exec(std::string sql)
 		{
 			int ret;
 
 			ret = sqlite3_exec(m_db, sql.c_str(), NULL, NULL, NULL);
-			if (ret != SQLITE_OK) throw sqlite_error(ret);
+			if (ret != SQLITE_OK) return false;
+
+			return true;
+		}
+
+		virtual std::string error()
+		{
+			const char* msg;
+
+			msg = sqlite3_errmsg(m_db);
+			if (msg == NULL) return std::string();
+
+			return std::string(msg);
 		}
 	};
 
@@ -115,27 +99,24 @@ namespace soechin
 			return m_stmt;
 		}
 
-		virtual void prepare(sqlite* db, std::string sql)
+		virtual bool prepare(sqlite* db, std::string sql)
 		{
 			int ret;
 
 			finalize();
 
 			ret = sqlite3_prepare(db->ptr(), sql.c_str(), -1, &m_stmt, NULL);
-			if (ret != SQLITE_OK) throw sqlite_error(ret);
+			if (ret != SQLITE_OK) return false;
 
 			m_db = db->ptr();
+			return true;
 		}
 
 		virtual void finalize()
 		{
-			int ret;
-
 			if (m_stmt != NULL)
 			{
-				ret = sqlite3_finalize(m_stmt);
-				if (ret != SQLITE_OK) throw sqlite_error(ret);
-
+				sqlite3_finalize(m_stmt);
 				m_stmt = NULL;
 				m_db = NULL;
 			}
@@ -146,66 +127,79 @@ namespace soechin
 			int ret;
 
 			ret = sqlite3_step(m_stmt);
-			if (ret == SQLITE_ROW) return true;
-			if (ret != SQLITE_DONE) throw sqlite_error(ret);;
+			if (ret != SQLITE_ROW) return false;
 
-			return false;
+			return true;
 		}
 
-		virtual void reset()
+		virtual bool reset()
 		{
 			int ret;
 
 			ret = sqlite3_reset(m_stmt);
-			if (ret != SQLITE_OK) throw sqlite_error(ret);
+			if (ret != SQLITE_OK) return false;
+
+			return true;
 		}
 
-		virtual void bind(int index, int value)
+		virtual bool bind(int index, int value)
 		{
 			int ret;
 
 			ret = sqlite3_bind_int(m_stmt, index, value);
-			if (ret != SQLITE_OK) throw sqlite_error(ret);
+			if (ret != SQLITE_OK) return false;
+
+			return true;
 		}
 
-		virtual void bind(int index, double value)
+		virtual bool bind(int index, double value)
 		{
 			int ret;
 
 			ret = sqlite3_bind_double(m_stmt, index, value);
-			if (ret != SQLITE_OK) throw sqlite_error(ret);
+			if (ret != SQLITE_OK) return false;
+
+			return true;
 		}
 
-		virtual void bind(int index, std::string text)
+		virtual bool bind(int index, std::string text)
 		{
 			int ret;
 
 			ret = sqlite3_bind_text(m_stmt, index, text.c_str(), -1, SQLITE_TRANSIENT);
-			if (ret != SQLITE_OK) throw sqlite_error(ret);
+			if (ret != SQLITE_OK) return false;
+
+			return true;
 		}
 
-		virtual void bind(std::string name, int value)
+		virtual bool bind(std::string name, int value)
 		{
 			int index;
 
 			index = sqlite3_bind_parameter_index(m_stmt, name.c_str());
-			bind(index, value);
+			if (!bind(index, value)) return false;
+
+			return true;
 		}
 
-		virtual void bind(std::string name, double value)
+		virtual bool bind(std::string name, double value)
 		{
 			int index;
 
 			index = sqlite3_bind_parameter_index(m_stmt, name.c_str());
-			bind(index, value);
+			if (!bind(index, value)) return false;
+
+			return true;
 		}
 
-		virtual void bind(std::string name, std::string text)
+		virtual bool bind(std::string name, std::string text)
 		{
 			int index;
 
 			index = sqlite3_bind_parameter_index(m_stmt, name.c_str());
-			bind(index, text);
+			if (!bind(index, text)) return false;
+
+			return true;
 		}
 
 		virtual void column(int index, int& value)
