@@ -2,6 +2,7 @@
 #include "HelloPS.h"
 #include "HelloPSDlg.h"
 #include "ManageDlg.h"
+#include <mmsystem.h>
 #include <cmath>
 #include <map>
 
@@ -66,8 +67,13 @@ BOOL CHelloPSDlg::OnInitDialog()
 	UIFromDatabase();
 
 	// create timers
+#ifdef OBSOLETE_TIMER
+	m_timer1 = timeSetEvent(100, 1, TimerFunc1, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+	m_timer2 = timeSetEvent(1, 1, TimerFunc2, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+#else
 	CreateTimerQueueTimer(&m_timer1, NULL, TimerFunc1, this, 0, 100, WT_EXECUTEDEFAULT);
 	CreateTimerQueueTimer(&m_timer2, NULL, TimerFunc2, this, 0, 1, WT_EXECUTEDEFAULT);
+#endif
 
 	// states
 	QueryPerformanceFrequency(&m_freq);
@@ -102,8 +108,8 @@ BOOL CHelloPSDlg::OnInitDialog()
 	m_duration2 = 1;
 	m_delay1 = 0; // input delay
 	m_delay2 = 0; // recovery delay
-	m_vertical = 1;
-	m_horizonal = 0;
+	m_vertical = 1.0;
+	m_horizonal = 0.5;
 
 	return TRUE;
 }
@@ -113,8 +119,13 @@ void CHelloPSDlg::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	// delete timers
+#ifdef OBSOLETE_TIMER
+	timeKillEvent(m_timer1);
+	timeKillEvent(m_timer2);
+#else
 	DeleteTimerQueueTimer(NULL, m_timer1, INVALID_HANDLE_VALUE);
 	DeleteTimerQueueTimer(NULL, m_timer2, INVALID_HANDLE_VALUE);
+#endif
 
 	// close database
 	CloseDatabase();
@@ -651,6 +662,24 @@ void CHelloPSDlg::OnEnKillfocusDelayEdt2()
 	OnUpdateAction();
 }
 
+#ifdef OBSOLETE_TIMER
+void __stdcall CHelloPSDlg::TimerFunc1(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+{
+	if (dwUser != NULL)
+	{
+		((CHelloPSDlg*)dwUser)->TimerFunc1();
+	}
+}
+
+void __stdcall CHelloPSDlg::TimerFunc2(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+{
+	if (dwUser != NULL)
+	{
+		((CHelloPSDlg*)dwUser)->TimerFunc2();
+	}
+}
+
+#else
 void __stdcall CHelloPSDlg::TimerFunc1(LPVOID lpParam, BOOLEAN bTimer)
 {
 	if (lpParam != NULL && bTimer)
@@ -666,6 +695,7 @@ void __stdcall CHelloPSDlg::TimerFunc2(LPVOID lpParam, BOOLEAN bTimer)
 		((CHelloPSDlg*)lpParam)->TimerFunc2();
 	}
 }
+#endif
 
 void CHelloPSDlg::TimerFunc1()
 {

@@ -30,8 +30,13 @@ public:
 	afx_msg void OnEnKillfocusDelayEdt1();
 	afx_msg void OnEnKillfocusDelayEdt2();
 	// timer/worker
+#ifdef OBSOLETE_TIMER
+	static void __stdcall TimerFunc1(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
+	static void __stdcall TimerFunc2(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
+#else
 	static void __stdcall TimerFunc1(LPVOID lpParam, BOOLEAN bTimer);
 	static void __stdcall TimerFunc2(LPVOID lpParam, BOOLEAN bTimer);
+#endif
 	virtual void TimerFunc1();
 	virtual void TimerFunc2();
 	virtual void MoveMouse(int dx, int dy);
@@ -44,8 +49,13 @@ private:
 	// database
 	soechin::sqlite m_sqlite;
 	// timers
+#ifdef OBSOLETE_TIMER
+	UINT m_timer1;
+	UINT m_timer2;
+#else
 	HANDLE m_timer1;
 	HANDLE m_timer2;
+#endif
 	// states
 	LARGE_INTEGER m_freq;
 	LARGE_INTEGER m_tick;
