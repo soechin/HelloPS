@@ -70,6 +70,9 @@ private:
 	double m_remain;
 	int m_dx;
 	int m_dy;
+	// Q-button
+	LARGE_INTEGER m_qtick;
+	bool m_qdown;
 	// weapon data
 	double m_speed;
 	double m_recoil;

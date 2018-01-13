@@ -90,6 +90,10 @@ BOOL CHelloPSDlg::OnInitDialog()
 	m_dx = 0;
 	m_dy = 0;
 
+	// Q-button
+	QueryPerformanceCounter(&m_qtick);
+	m_qdown = false;
+
 	// weapon data
 	m_speed = 0;
 	m_recoil = 0;
@@ -288,7 +292,7 @@ void CHelloPSDlg::UIFromDatabase()
 	{
 		m_weaponLst2.SetCurSel(index);
 	}
-	
+
 	// secondary sight
 	ReadSetting("Sight: " + weapon, sight);
 
@@ -755,6 +759,43 @@ void CHelloPSDlg::TimerFunc1()
 			PostMessage(WM_UPDATE_ACTION);
 		}
 	}
+
+	// Q-button
+	if (m_qdown)
+	{
+		INPUT input;
+
+		memset(&input, 0, sizeof(input));
+		input.type = INPUT_KEYBOARD;
+		input.ki.wVk = 'Q';
+		input.ki.wScan = MapVirtualKey('Q', MAPVK_VK_TO_VSC);
+		input.ki.dwFlags = KEYEVENTF_KEYUP;
+
+		SendInput(1, &input, sizeof(input));
+		m_qdown = false;
+	}
+	else if (!m_idle && m_lbutton)
+	{
+		INPUT input;
+		LARGE_INTEGER tick;
+		double time;
+
+		QueryPerformanceCounter(&tick);
+		time = (double)(tick.QuadPart - m_qtick.QuadPart) / m_freq.QuadPart;
+
+		if (time >= 1.0/*seconds*/)
+		{
+			memset(&input, 0, sizeof(input));
+			input.type = INPUT_KEYBOARD;
+			input.ki.wVk = 'Q';
+			input.ki.wScan = MapVirtualKey('Q', MAPVK_VK_TO_VSC);
+			input.ki.dwFlags = 0/*KEYEVENTF_KEYDOWN*/;
+
+			SendInput(1, &input, sizeof(input));
+			m_qtick = tick;
+			m_qdown = true;
+		}
+	}
 }
 
 void CHelloPSDlg::TimerFunc2()
@@ -765,12 +806,6 @@ void CHelloPSDlg::TimerFunc2()
 	bool lbutton;
 	double ifps, ishot, time, num, intp, frac, dz;
 	int dx, dy, ox, oy;
-
-	// check action
-	if ((m_action != 1 && m_action != 2) || !m_enabled)
-	{
-		return;
-	}
 
 	// lbutton down
 	lbutton = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
@@ -830,7 +865,7 @@ void CHelloPSDlg::TimerFunc2()
 	m_lbutton = lbutton;
 
 	// abort
-	if (m_idle)
+	if (m_idle || (m_action != 1 && m_action != 2) || !m_enabled)
 	{
 		return;
 	}
