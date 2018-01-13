@@ -722,16 +722,6 @@ void CHelloPSDlg::TimerFunc1()
 			}
 		}
 	}
-	else if ((GetAsyncKeyState(0xc0) & 0x8000) != 0) // '`'
-	{
-		CSingleLock locker(&m_mutex, TRUE);
-
-		if (m_action != 0)
-		{
-			m_action = 0;
-			PostMessage(WM_UPDATE_ACTION);
-		}
-	}
 	else if ((GetAsyncKeyState(0x31) & 0x8000) != 0) // '1'
 	{
 		CSingleLock locker(&m_mutex, TRUE);
@@ -749,6 +739,19 @@ void CHelloPSDlg::TimerFunc1()
 		if (m_action != 2)
 		{
 			m_action = 2;
+			PostMessage(WM_UPDATE_ACTION);
+		}
+	}
+	else if ((GetAsyncKeyState(0xc0) & 0x8000) != 0 || // '`'
+		(GetAsyncKeyState(0x33) & 0x8000) != 0 || // '3'
+		(GetAsyncKeyState(0x34) & 0x8000) != 0 || // '4'
+		(GetAsyncKeyState(0x35) & 0x8000) != 0) // '5'
+	{
+		CSingleLock locker(&m_mutex, TRUE);
+
+		if (m_action != 0)
+		{
+			m_action = 0;
 			PostMessage(WM_UPDATE_ACTION);
 		}
 	}
