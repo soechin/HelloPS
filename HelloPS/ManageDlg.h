@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sqlite.hpp"
+#include "afxcmn.h"
 
 class CManageDlg : public CDialogEx {
     DECLARE_DYNAMIC(CManageDlg)
@@ -21,6 +22,7 @@ class CManageDlg : public CDialogEx {
     afx_msg void OnBnClickedImportBtn();
     afx_msg void OnCbnSelchangeFactionLst();
     afx_msg void OnCbnSelchangeCategoryLst();
+    virtual bool DownloadWeaponData(CString &jsonFile);
   private:
 #ifdef AFX_DESIGN_TIME
     enum { IDD = IDD_MANAGE_DIALOG };
@@ -37,4 +39,5 @@ class CManageDlg : public CDialogEx {
     CComboBox m_categoryLst;
     CListBox m_weaponLst1;
     CListBox m_weaponLst2;
+    CProgressCtrl m_progressBar;
 };

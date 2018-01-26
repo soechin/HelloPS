@@ -4,6 +4,7 @@
 // JSON for Modern C++
 #include "json.hpp"
 #include <fstream>
+#include <afxinet.h>
 
 IMPLEMENT_DYNAMIC(CManageDlg, CDialogEx)
 BEGIN_MESSAGE_MAP(CManageDlg, CDialogEx)
@@ -31,6 +32,7 @@ void CManageDlg::DoDataExchange(CDataExchange *pDX) {
     DDX_Control(pDX, IDC_CATEGORY_LST, m_categoryLst);
     DDX_Control(pDX, IDC_WEAPON_LST_1, m_weaponLst1);
     DDX_Control(pDX, IDC_WEAPON_LST_2, m_weaponLst2);
+    DDX_Control(pDX, IDC_PROGRESS_BAR, m_progressBar);
 }
 
 BOOL CManageDlg::OnInitDialog() {
@@ -312,26 +314,25 @@ void CManageDlg::OnBnClickedRemoveBtn() {
 }
 
 void CManageDlg::OnBnClickedImportBtn() {
-    CFileDialog ofd(TRUE, NULL, NULL, OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST,
-        TEXT("JSON|*.json||"));
+    CString file;
     std::ifstream ifs;
     std::string name, category, faction;
     std::vector<std::string> categories, factions, modes;
     nlohmann::json json, item, mode, modej;
     soechin::sqlite_stmt stmt;
     double recoil, factor, angleMin, angleMax;
-    int found, burst, delay, speed;
+    int total, pos, found, burst, delay, speed;
 
-    if (ofd.DoModal() != IDOK) {
-        return;
-    }
+    if (DownloadWeaponData(file)) {
+        // open, read, and close
+        ifs.open(file);
 
-    // open, read, and close
-    ifs.open(ofd.GetPathName());
+        if (ifs.is_open()) {
+            json << ifs;
+            ifs.close();
+        }
 
-    if (ifs.is_open()) {
-        json << ifs;
-        ifs.close();
+        DeleteFile(file);
     }
 
     // DO NOT sort factions and modes
@@ -361,7 +362,11 @@ void CManageDlg::OnBnClickedImportBtn() {
         "(@name, @faction, @category, @speed, @recoil, @factor, "
         "@angleMin, @angleMax, @burst, @delay);");
 
-    for (int i = 0; i < (int)json["item_list"].size(); i++) {
+    total = (int)json["item_list"].size();
+    m_progressBar.SetRange(0, SHORT_MAX - 1);
+    m_progressBar.SetPos(0);
+
+    for (int i = 0; i < total; i++) {
         item = json["item_list"][i];
 
         // name, category
@@ -454,7 +459,17 @@ void CManageDlg::OnBnClickedImportBtn() {
         stmt.bind("@burst", burst);
         stmt.bind("@delay", (double)delay / 1000); // ms -> sec
         stmt.step();
+
+        pos = (SHORT)((i * (SHORT_MAX - 1)) / total);
+
+        m_progressBar.SetRange(0, SHORT_MAX);
+        m_progressBar.SetPos(pos + 1);
+        m_progressBar.SetPos(pos);
+        m_progressBar.SetRange(0, SHORT_MAX - 1);
     }
+
+    m_progressBar.SetRange(0, SHORT_MAX);
+    m_progressBar.SetPos(SHORT_MAX);
 
     // cleanup
     stmt.finalize();
@@ -482,4 +497,52 @@ void CManageDlg::OnCbnSelchangeCategoryLst() {
     WriteSetting("Category", category);
 
     ReloadWeaponLst2();
+}
+
+bool CManageDlg::DownloadWeaponData(CString &jsonFile) {
+    CAutoPtr<CInternetSession> session;
+    CAutoPtr<CStdioFile> in, out;
+    TCHAR tempDir[MAX_PATH], tempFile[MAX_PATH];
+    BYTE buf[1024];
+    UINT len;
+    ULONGLONG total, bytes;
+    int pos;
+
+    try {
+        session.Attach(new CInternetSession());
+        in.Attach(session->OpenURL(TEXT("https://www.planetstats.net/data/weapons.json")));
+    } catch (CInternetException *e) {
+        e->ReportError();
+        return false;
+    }
+
+    GetTempPath(_countof(tempDir), tempDir);
+    GetTempFileName(tempDir, NULL, 0, tempFile);
+    out.Attach(new CStdioFile(tempFile, CFile::modeWrite));
+
+    total = in->GetLength();
+    bytes = 0;
+    m_progressBar.SetRange(0, SHORT_MAX - 1);
+    m_progressBar.SetPos(0);
+
+    while ((len = in->Read(buf, _countof(buf))) > 0) {
+        out->Write(buf, len);
+
+        bytes += len;
+        pos = (SHORT)((bytes * (SHORT_MAX - 1)) / total);
+
+        m_progressBar.SetRange(0, SHORT_MAX);
+        m_progressBar.SetPos(pos + 1);
+        m_progressBar.SetPos(pos);
+        m_progressBar.SetRange(0, SHORT_MAX - 1);
+    }
+
+    m_progressBar.SetRange(0, SHORT_MAX);
+    m_progressBar.SetPos(SHORT_MAX);
+
+    in->Close();
+    out->Close();
+
+    jsonFile = tempFile;
+    return true;
 }

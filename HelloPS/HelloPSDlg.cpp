@@ -202,6 +202,7 @@ void CHelloPSDlg::UIFromDatabase() {
     ReadSetting("Weapon1", weapon);
 
     m_weaponLst1.ResetContent();
+    m_weaponLst1.AddString(TEXT("Disabled"));
     index = -1;
 
     stmt.prepare(&m_sqlite, "SELECT Name FROM Weapons1 "
@@ -222,6 +223,9 @@ void CHelloPSDlg::UIFromDatabase() {
 
     if (index >= 0) {
         m_weaponLst1.SetCurSel(index);
+        m_sightLst1.EnableWindow(TRUE);
+    } else {
+        m_sightLst1.EnableWindow(FALSE);
     }
 
     // primary sight
@@ -254,6 +258,7 @@ void CHelloPSDlg::UIFromDatabase() {
     ReadSetting("Weapon2", weapon);
 
     m_weaponLst2.ResetContent();
+    m_weaponLst2.AddString(TEXT("Disabled"));
     index = -1;
 
     stmt.prepare(&m_sqlite, "SELECT Name FROM Weapons2 "
@@ -274,6 +279,9 @@ void CHelloPSDlg::UIFromDatabase() {
 
     if (index >= 0) {
         m_weaponLst2.SetCurSel(index);
+        m_sightLst2.EnableWindow(TRUE);
+    } else {
+        m_sightLst2.EnableWindow(FALSE);
     }
 
     // secondary sight
@@ -695,7 +703,7 @@ void CHelloPSDlg::TimerFunc1() {
 
         SendInput(1, &input, sizeof(input));
         m_qdown = false;
-    } else if (!m_idle && m_lbutton) {
+    } else if (m_enabled && !m_idle && m_lbutton) {
         INPUT input;
         LARGE_INTEGER tick;
         double time;
