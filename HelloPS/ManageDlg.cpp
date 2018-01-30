@@ -320,7 +320,7 @@ void CManageDlg::OnBnClickedImportBtn() {
     std::vector<std::string> categories, factions, modes;
     nlohmann::json json, item, mode, modej;
     soechin::sqlite_stmt stmt;
-    double recoil, factor, angleMin, angleMax;
+    double recoil, factor, angleMin, angleMax, velocity;
     int total, pos, found, burst, delay, speed;
 
     if (DownloadWeaponData(file)) {
@@ -339,6 +339,7 @@ void CManageDlg::OnBnClickedImportBtn() {
     categories.push_back("Assault Rifle");
     categories.push_back("Battle Rifle");
     categories.push_back("Carbine");
+    categories.push_back("Crossbow");
     categories.push_back("LMG");
     categories.push_back("Pistol");
     categories.push_back("SMG");
@@ -354,13 +355,14 @@ void CManageDlg::OnBnClickedImportBtn() {
     modes.push_back("3x Burst");
     modes.push_back("2x Burst");
     modes.push_back("Semi-Auto");
+    modes.push_back("Bolt Action");
 
     // prepare to insert
     stmt.prepare(m_sqlite, "INSERT OR REPLACE INTO WeaponsDB "
         "(Name, Faction, Category, Speed, Recoil, Factor, "
-        "AngleMin, AngleMax, Burst, Delay) VALUES "
+        "AngleMin, AngleMax, Burst, Delay, Velocity) VALUES "
         "(@name, @faction, @category, @speed, @recoil, @factor, "
-        "@angleMin, @angleMax, @burst, @delay);");
+        "@angleMin, @angleMax, @burst, @delay, @velocity);");
 
     total = (int)json["item_list"].size();
     m_progressBar.SetRange(0, SHORT_MAX - 1);
@@ -446,6 +448,15 @@ void CManageDlg::OnBnClickedImportBtn() {
         angleMin = std::stod(mode["recoil_angle_min"].get<std::string>());
         angleMax = std::stod(mode["recoil_angle_max"].get<std::string>());
 
+        // velocity
+        if (mode["projectile_speed_override"].is_string()) {
+            velocity = std::stod(mode["projectile_speed_override"].get<std::string>());
+        } else if (modej["muzzle_velocity"].is_string()) {
+            velocity = std::stod(modej["muzzle_velocity"].get<std::string>());
+        } else {
+            velocity = std::stod(modej["speed"].get<std::string>());
+        }
+
         // insert into database
         stmt.reset();
         stmt.bind("@name", name);
@@ -458,6 +469,7 @@ void CManageDlg::OnBnClickedImportBtn() {
         stmt.bind("@angleMax", angleMax);
         stmt.bind("@burst", burst);
         stmt.bind("@delay", (double)delay / 1000); // ms -> sec
+        stmt.bind("@velocity", velocity);
         stmt.step();
 
         pos = (SHORT)((i * (SHORT_MAX - 1)) / total);

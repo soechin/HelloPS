@@ -24,16 +24,17 @@
 #define IDC_SENSITIVITY_EDT_3           1017
 #define IDC_DELAY_EDT_1                 1018
 #define IDC_DELAY_EDT_2                 1019
-#define IDC_PROGRESS1                   1020
 #define IDC_PROGRESS_BAR                1020
+#define IDC_OSD_EDT_1                   1021
+#define IDC_OSD_EDT_2                   1022
 
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        202
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1021
+#define _APS_NEXT_CONTROL_VALUE         1023
 #define _APS_NEXT_SYMED_VALUE           103
 #endif
 #endif

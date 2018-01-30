@@ -1,7 +1,6 @@
 #pragma once
 
 #include "sqlite.hpp"
-#include "afxcmn.h"
 
 class CManageDlg : public CDialogEx {
     DECLARE_DYNAMIC(CManageDlg)
