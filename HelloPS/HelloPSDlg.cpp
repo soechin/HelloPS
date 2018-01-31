@@ -31,6 +31,7 @@ BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
     ON_EN_KILLFOCUS(IDC_DELAY_EDT_1, &CHelloPSDlg::OnEnKillfocusDelayEdt1)
     ON_EN_KILLFOCUS(IDC_DELAY_EDT_2, &CHelloPSDlg::OnEnKillfocusDelayEdt2)
     ON_EN_KILLFOCUS(IDC_OSD_EDT_1, &CHelloPSDlg::OnEnKillfocusOsdEdt1)
+    ON_EN_KILLFOCUS(IDC_OSD_EDT_2, &CHelloPSDlg::OnEnKillfocusOsdEdt2)
 END_MESSAGE_MAP()
 
 CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG) {
@@ -51,6 +52,7 @@ void CHelloPSDlg::DoDataExchange(CDataExchange *pDX) {
     DDX_Control(pDX, IDC_DELAY_EDT_1, m_delayEdt1);
     DDX_Control(pDX, IDC_DELAY_EDT_2, m_delayEdt2);
     DDX_Control(pDX, IDC_OSD_EDT_1, m_osdEdt1);
+    DDX_Control(pDX, IDC_OSD_EDT_2, m_osdEdt2);
 }
 
 BOOL CHelloPSDlg::OnInitDialog() {
@@ -371,6 +373,10 @@ void CHelloPSDlg::UIFromDatabase() {
     ReadSetting("Osd1", osd);
     text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
     m_osdEdt1.SetWindowText(text);
+
+    ReadSetting("Osd2", osd);
+    text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
+    m_osdEdt2.SetWindowText(text);
 }
 
 void CHelloPSDlg::ReadSetting(std::string key, std::string &value) {
@@ -498,7 +504,9 @@ void CHelloPSDlg::OnUpdateAction() {
 
     // osd
     m_osdEdt1.GetWindowText(text);
-    m_osd1 = _ttof(text);
+    m_osd1 = _ttof(text) / 2;
+    m_osdEdt2.GetWindowText(text);
+    m_osd2 = _ttoi(text);
 
     // draw osd
     DrawOSD();
@@ -515,6 +523,7 @@ void CHelloPSDlg::OnUpdateEnabled() {
     m_delayEdt1.EnableWindow(!m_enabled);
     m_delayEdt2.EnableWindow(!m_enabled);
     m_osdEdt1.EnableWindow(!m_enabled);
+    m_osdEdt2.EnableWindow(!m_enabled);
 
     OnUpdateAction();
 }
@@ -675,6 +684,17 @@ void CHelloPSDlg::OnEnKillfocusOsdEdt1() {
     m_osdEdt1.GetWindowText(text);
     osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
     WriteSetting("Osd1", osd);
+
+    OnUpdateAction();
+}
+
+void CHelloPSDlg::OnEnKillfocusOsdEdt2() {
+    CString text;
+    std::string osd;
+
+    m_osdEdt2.GetWindowText(text);
+    osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Osd2", osd);
 
     OnUpdateAction();
 }
@@ -929,9 +949,10 @@ void CHelloPSDlg::DrawOSD() {
     CDC *dc;
     CBrush *brush, *brush0;
     CPen *pen, *pen0;
+    CFont *font, *font0;
     CRect rect;
-    std::vector<int> drops;
-    int cx, cy;
+    std::map<int, int> drops;
+    int cx, cy, ch, tw, th;
 
     if (!m_enabled || (m_action != 1 && m_action != 2) || m_gravity <= 0) {
         if (m_osdWnd->IsWindowVisible()) {
@@ -949,43 +970,83 @@ void CHelloPSDlg::DrawOSD() {
 
     // dc
     dc = m_osdWnd->GetDC();
+    dc->SetTextColor(m_osdFg);
+    dc->SetBkColor(m_osdBg);
 
     // brush
-    brush = new CBrush(m_osdBg);
+    brush = new CBrush();
+    brush->CreateSolidBrush(m_osdBg);
     brush0 = dc->SelectObject(brush);
 
     // pen
-    pen = new CPen(PS_SOLID, 1, m_osdFg);
+    pen = new CPen();
+    pen->CreatePen(PS_SOLID, 1, m_osdFg);
     pen0 = dc->SelectObject(pen);
 
-    for (int x1 = 150; x1 <= 500; x1 += 50) {
-        double x0 = 50;
-        double t0 = x0 / m_velocity;
-        double t1 = x1 / m_velocity;
+    // font
+    font = new CFont();
+    font->CreateFont(-12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH, TEXT("Arial"));
+    font0 = dc->SelectObject(font);
+
+    // window height
+    ch = 0;
+
+    // text width/height
+    tw = 0;
+    th = 0;
+
+    for (int x = 50; x <= 400; x += 50) {
+        double t0 = m_osd2 / m_velocity;
+        double t1 = x / m_velocity;
         double y0 = m_gravity * t0 * t0 / 2;
         double y1 = m_gravity * t1 * t1 / 2;
-        double a0 = atan(y0 / x0) * (180 / M_PI);
-        double a1 = atan(y1 / x1) * (180 / M_PI);
-        double d = (a1 - a0) * cy * m_zoom / (m_osd1 / 2);
+        double y2 = tan((m_osd1 / m_zoom) * (M_PI / 180)) * x;
+        int d = (int)((y1 - y0) / y2 * cy);
 
-        drops.push_back((int)(d + 0.5));
+        drops.insert(std::make_pair(x, d));
+
+        if (d > ch) {
+            ch = d;
+        }
+
+        if ((x % 100) == 0) {
+            text.Format(TEXT("%d"), x / 100);
+            rect.left = 0;
+            rect.top = 0;
+            dc->DrawText(text, &rect, DT_LEFT | DT_TOP | DT_CALCRECT);
+
+            if (rect.right > tw) {
+                tw = rect.right;
+            }
+
+            if (rect.bottom > th) {
+                th = rect.bottom;
+            }
+        }
     }
 
     // resize window
-    m_osdWnd->SetWindowPos(NULL, cx, cy, 16, drops.back() + 1,
-        SWP_NOZORDER | SWP_NOACTIVATE);
+    m_osdWnd->SetWindowPos(NULL, cx, cy, 16 + tw * 2, ch + th, SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
     m_osdWnd->GetClientRect(&rect);
     dc->FillRect(&rect, brush);
 
-    for (int i = 0; i < (int)drops.size(); i++) {
-        if (((i + 1) % 2) == 0) {
-            dc->MoveTo(3, drops[i]);
-            dc->LineTo(10, drops[i]);
+    for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
+        if ((it->first % 100) == 0) {
+            text.Format(TEXT("%d"), it->first / 100);
+            rect.left = 12 + (((it->first % 200) == 0) ? tw : 0);
+            rect.top = it->second - th / 2;
+            rect.right = rect.left + tw;
+            rect.bottom = rect.top + th;
+            dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
+
+            dc->MoveTo(3, it->second);
+            dc->LineTo(10, it->second);
         } else {
-            dc->MoveTo(3, drops[i]);
-            dc->LineTo(5, drops[i]);
+            dc->MoveTo(3, it->second);
+            dc->LineTo(5, it->second);
         }
     }
 

@@ -30,6 +30,7 @@ class CHelloPSDlg : public CDialogEx {
     afx_msg void OnEnKillfocusDelayEdt1();
     afx_msg void OnEnKillfocusDelayEdt2();
     afx_msg void OnEnKillfocusOsdEdt1();
+    afx_msg void OnEnKillfocusOsdEdt2();
     // timer/worker
 #ifdef OBSOLETE_TIMER
     static void __stdcall TimerFunc1(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
@@ -101,6 +102,7 @@ class CHelloPSDlg : public CDialogEx {
     double m_vertical;
     double m_horizonal;
     double m_osd1;
+    int m_osd2;
     // user interface
     CButton m_manageBtn;
     CComboBox m_weaponLst1;
@@ -115,4 +117,5 @@ class CHelloPSDlg : public CDialogEx {
     CEdit m_delayEdt1;
     CEdit m_delayEdt2;
     CEdit m_osdEdt1;
+    CEdit m_osdEdt2;
 };
