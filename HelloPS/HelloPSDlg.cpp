@@ -958,7 +958,7 @@ void CHelloPSDlg::DrawOSD() {
     CPen *pen, *pen0;
     CRect rect;
     int cx, cy, cw, ch, tx, th;
-    double time, drop;
+    double t0, t1, d0, d1, a0, a1;
     int drops[_countof(m_osd2)];
 
     if (!m_enabled || (m_action != 1 && m_action != 2)) {
@@ -998,11 +998,15 @@ void CHelloPSDlg::DrawOSD() {
     tx = 10;
     th = 0;
 
-    for (int i = 0; i < _countof(m_osd2); i++) {
+    for (int i = 1; i < _countof(m_osd2); i++) {
         // G-formula
-        time = m_osd2[i] / (m_velocity * 0.6);
-        drop = m_gravity * time * time / m_osd1 * m_zoom;
-        drops[i] = (int)(cy * drop + 0.5);
+        t0 = m_osd2[0] / m_velocity;
+        t1 = m_osd2[i] / m_velocity;
+        d0 = m_gravity * t0 * t0 / 2;
+        d1 = m_gravity * t1 * t1 / 2;
+        a0 = atan(d0 / m_osd2[0]) * (180 / M_PI);
+        a1 = atan(d1 / m_osd2[i]) * (180 / M_PI);
+        drops[i] = (int)((a1 - a0) * cy * m_zoom / (m_osd1 / 2) + 0.5);
 
         // calculate text rect
         rect.left = tx;
@@ -1032,7 +1036,7 @@ void CHelloPSDlg::DrawOSD() {
     m_osdWnd->GetClientRect(&rect);
     dc->FillRect(&rect, brush);
 
-    for (int i = 0; i < _countof(m_osd2); i++) {
+    for (int i = 1; i < _countof(m_osd2); i++) {
         if (m_osd2[i] <= 0) {
             continue;
         }
