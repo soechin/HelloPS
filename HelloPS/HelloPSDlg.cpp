@@ -5,6 +5,7 @@
 #include <mmsystem.h>
 #include <cmath>
 #include <map>
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -30,7 +31,6 @@ BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
     ON_EN_KILLFOCUS(IDC_DELAY_EDT_1, &CHelloPSDlg::OnEnKillfocusDelayEdt1)
     ON_EN_KILLFOCUS(IDC_DELAY_EDT_2, &CHelloPSDlg::OnEnKillfocusDelayEdt2)
     ON_EN_KILLFOCUS(IDC_OSD_EDT_1, &CHelloPSDlg::OnEnKillfocusOsdEdt1)
-    ON_EN_KILLFOCUS(IDC_OSD_EDT_2, &CHelloPSDlg::OnEnKillfocusOsdEdt2)
 END_MESSAGE_MAP()
 
 CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG) {
@@ -51,7 +51,6 @@ void CHelloPSDlg::DoDataExchange(CDataExchange *pDX) {
     DDX_Control(pDX, IDC_DELAY_EDT_1, m_delayEdt1);
     DDX_Control(pDX, IDC_DELAY_EDT_2, m_delayEdt2);
     DDX_Control(pDX, IDC_OSD_EDT_1, m_osdEdt1);
-    DDX_Control(pDX, IDC_OSD_EDT_2, m_osdEdt2);
 }
 
 BOOL CHelloPSDlg::OnInitDialog() {
@@ -117,6 +116,8 @@ BOOL CHelloPSDlg::OnInitDialog() {
     m_angleMax = 0;
     m_burst = 0;
     m_delay = 0; // first shot delay
+    m_velocity = 0;
+    m_gravity = 0;
 
     // sight data
     m_zoom = 1.0;
@@ -370,10 +371,6 @@ void CHelloPSDlg::UIFromDatabase() {
     ReadSetting("Osd1", osd);
     text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
     m_osdEdt1.SetWindowText(text);
-
-    ReadSetting("Osd2", osd);
-    text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
-    m_osdEdt2.SetWindowText(text);
 }
 
 void CHelloPSDlg::ReadSetting(std::string key, std::string &value) {
@@ -452,10 +449,11 @@ void CHelloPSDlg::OnUpdateAction() {
         stmt.column("Delay", m_delay);
         stmt.column("Velocity", m_velocity);
 
-        if (category == "Crossbow" || category == "Sniper Rifle") {
+        if (category == "Sniper Rifle") {
+            m_recoil = 0;
             m_gravity = 7.5;
         } else {
-            m_gravity = 11.25;
+            m_gravity = 0;
         }
     }
 
@@ -501,19 +499,6 @@ void CHelloPSDlg::OnUpdateAction() {
     // osd
     m_osdEdt1.GetWindowText(text);
     m_osd1 = _ttof(text);
-    m_osdEdt2.GetWindowText(text);
-
-    for (int i = 0; i < _countof(m_osd2); i++) {
-        int p = text.FindOneOf(TEXT(",;"));
-
-        if (p >= 0) {
-            m_osd2[i] = _ttoi(text.Mid(0, p));
-            text.Delete(0, p + 1);
-        } else {
-            m_osd2[i] = _ttoi(text);
-            text.Empty();
-        }
-    }
 
     // draw osd
     DrawOSD();
@@ -530,7 +515,6 @@ void CHelloPSDlg::OnUpdateEnabled() {
     m_delayEdt1.EnableWindow(!m_enabled);
     m_delayEdt2.EnableWindow(!m_enabled);
     m_osdEdt1.EnableWindow(!m_enabled);
-    m_osdEdt2.EnableWindow(!m_enabled);
 
     OnUpdateAction();
 }
@@ -691,17 +675,6 @@ void CHelloPSDlg::OnEnKillfocusOsdEdt1() {
     m_osdEdt1.GetWindowText(text);
     osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
     WriteSetting("Osd1", osd);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusOsdEdt2() {
-    CString text;
-    std::string osd;
-
-    m_osdEdt2.GetWindowText(text);
-    osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Osd2", osd);
 
     OnUpdateAction();
 }
@@ -957,11 +930,10 @@ void CHelloPSDlg::DrawOSD() {
     CBrush *brush, *brush0;
     CPen *pen, *pen0;
     CRect rect;
-    int cx, cy, cw, ch, tx, th;
-    double t0, t1, d0, d1, a0, a1;
-    int drops[_countof(m_osd2)];
+    std::vector<int> drops;
+    int cx, cy;
 
-    if (!m_enabled || (m_action != 1 && m_action != 2)) {
+    if (!m_enabled || (m_action != 1 && m_action != 2) || m_gravity <= 0) {
         if (m_osdWnd->IsWindowVisible()) {
             m_osdWnd->ShowWindow(SW_HIDE);
         }
@@ -977,82 +949,44 @@ void CHelloPSDlg::DrawOSD() {
 
     // dc
     dc = m_osdWnd->GetDC();
-    dc->SetBkColor(m_osdBg);
-    dc->SetTextColor(m_osdFg);
 
     // brush
-    brush = new CBrush();
-    brush->CreateSolidBrush(m_osdBg);
+    brush = new CBrush(m_osdBg);
     brush0 = dc->SelectObject(brush);
 
     // pen
-    pen = new CPen();
-    pen->CreatePen(PS_SOLID, 1, m_osdFg);
+    pen = new CPen(PS_SOLID, 1, m_osdFg);
     pen0 = dc->SelectObject(pen);
 
-    // max window size
-    cw = 0;
-    ch = 0;
+    for (int x1 = 150; x1 <= 500; x1 += 50) {
+        double x0 = 50;
+        double t0 = x0 / m_velocity;
+        double t1 = x1 / m_velocity;
+        double y0 = m_gravity * t0 * t0 / 2;
+        double y1 = m_gravity * t1 * t1 / 2;
+        double a0 = atan(y0 / x0) * (180 / M_PI);
+        double a1 = atan(y1 / x1) * (180 / M_PI);
+        double d = (a1 - a0) * cy * m_zoom / (m_osd1 / 2);
 
-    // max text offset/height
-    tx = 10;
-    th = 0;
-
-    for (int i = 1; i < _countof(m_osd2); i++) {
-        // G-formula
-        t0 = m_osd2[0] / m_velocity;
-        t1 = m_osd2[i] / m_velocity;
-        d0 = m_gravity * t0 * t0 / 2;
-        d1 = m_gravity * t1 * t1 / 2;
-        a0 = atan(d0 / m_osd2[0]) * (180 / M_PI);
-        a1 = atan(d1 / m_osd2[i]) * (180 / M_PI);
-        drops[i] = (int)((a1 - a0) * cy * m_zoom / (m_osd1 / 2) + 0.5);
-
-        // calculate text rect
-        rect.left = tx;
-        rect.top = drops[i];
-
-        text.Format(TEXT("%dm"), m_osd2[i]);
-        dc->DrawText(text, &rect, DT_LEFT | DT_TOP | DT_CALCRECT);
-
-        if (rect.right > cw) {
-            cw = rect.right;
-        }
-
-        if (rect.bottom > ch) {
-            ch = rect.bottom;
-        }
-
-        if ((rect.bottom - rect.top) > th) {
-            th = rect.bottom - rect.top;
-        }
+        drops.push_back((int)(d + 0.5));
     }
 
     // resize window
-    m_osdWnd->SetWindowPos(NULL, cx + 1, cy + 1, cw, ch,
+    m_osdWnd->SetWindowPos(NULL, cx, cy, 16, drops.back() + 1,
         SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
     m_osdWnd->GetClientRect(&rect);
     dc->FillRect(&rect, brush);
 
-    for (int i = 1; i < _countof(m_osd2); i++) {
-        if (m_osd2[i] <= 0) {
-            continue;
+    for (int i = 0; i < (int)drops.size(); i++) {
+        if (((i + 1) % 2) == 0) {
+            dc->MoveTo(3, drops[i]);
+            dc->LineTo(10, drops[i]);
+        } else {
+            dc->MoveTo(3, drops[i]);
+            dc->LineTo(5, drops[i]);
         }
-
-        // draw text
-        rect.left = tx;
-        rect.top = drops[i] - (th / 2);
-        rect.right = cw;
-        rect.bottom = ch;
-
-        text.Format(TEXT("%dm"), m_osd2[i]);
-        dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
-
-        // draw line
-        dc->MoveTo((int)(tx * 0.25 + 0.5), drops[i]);
-        dc->LineTo((int)(tx * 0.75 + 0.5), drops[i]);
     }
 
     // delete pen

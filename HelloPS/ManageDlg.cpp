@@ -32,7 +32,7 @@ void CManageDlg::DoDataExchange(CDataExchange *pDX) {
     DDX_Control(pDX, IDC_CATEGORY_LST, m_categoryLst);
     DDX_Control(pDX, IDC_WEAPON_LST_1, m_weaponLst1);
     DDX_Control(pDX, IDC_WEAPON_LST_2, m_weaponLst2);
-    DDX_Control(pDX, IDC_PROGRESS_BAR, m_progressBar);
+    DDX_Control(pDX, IDC_PROGRESS_LBL, m_progressLbl);
 }
 
 BOOL CManageDlg::OnInitDialog() {
@@ -314,14 +314,14 @@ void CManageDlg::OnBnClickedRemoveBtn() {
 }
 
 void CManageDlg::OnBnClickedImportBtn() {
-    CString file;
+    CString file, text;
     std::ifstream ifs;
     std::string name, category, faction;
     std::vector<std::string> categories, factions, modes;
     nlohmann::json json, item, mode, modej;
     soechin::sqlite_stmt stmt;
     double recoil, factor, angleMin, angleMax, velocity;
-    int total, pos, found, burst, delay, speed;
+    int total, found, burst, delay, speed;
 
     if (DownloadWeaponData(file)) {
         // open, read, and close
@@ -339,7 +339,6 @@ void CManageDlg::OnBnClickedImportBtn() {
     categories.push_back("Assault Rifle");
     categories.push_back("Battle Rifle");
     categories.push_back("Carbine");
-    categories.push_back("Crossbow");
     categories.push_back("LMG");
     categories.push_back("Pistol");
     categories.push_back("SMG");
@@ -365,8 +364,6 @@ void CManageDlg::OnBnClickedImportBtn() {
         "@angleMin, @angleMax, @burst, @delay, @velocity);");
 
     total = (int)json["item_list"].size();
-    m_progressBar.SetRange(0, SHORT_MAX - 1);
-    m_progressBar.SetPos(0);
 
     for (int i = 0; i < total; i++) {
         item = json["item_list"][i];
@@ -472,16 +469,11 @@ void CManageDlg::OnBnClickedImportBtn() {
         stmt.bind("@velocity", velocity);
         stmt.step();
 
-        pos = (SHORT)((i * (SHORT_MAX - 1)) / total);
-
-        m_progressBar.SetRange(0, SHORT_MAX);
-        m_progressBar.SetPos(pos + 1);
-        m_progressBar.SetPos(pos);
-        m_progressBar.SetRange(0, SHORT_MAX - 1);
+        text.Format(TEXT("%.0lf%%"), (double)i / total * 100);
+        m_progressLbl.SetWindowText(text);
     }
 
-    m_progressBar.SetRange(0, SHORT_MAX);
-    m_progressBar.SetPos(SHORT_MAX);
+    m_progressLbl.SetWindowText(TEXT("DONE"));
 
     // cleanup
     stmt.finalize();
@@ -514,11 +506,11 @@ void CManageDlg::OnCbnSelchangeCategoryLst() {
 bool CManageDlg::DownloadWeaponData(CString &jsonFile) {
     CAutoPtr<CInternetSession> session;
     CAutoPtr<CStdioFile> in, out;
+    CString text;
     TCHAR tempDir[MAX_PATH], tempFile[MAX_PATH];
     BYTE buf[1024];
     UINT len;
     ULONGLONG total, bytes;
-    int pos;
 
     try {
         session.Attach(new CInternetSession());
@@ -534,23 +526,16 @@ bool CManageDlg::DownloadWeaponData(CString &jsonFile) {
 
     total = in->GetLength();
     bytes = 0;
-    m_progressBar.SetRange(0, SHORT_MAX - 1);
-    m_progressBar.SetPos(0);
 
     while ((len = in->Read(buf, _countof(buf))) > 0) {
         out->Write(buf, len);
-
         bytes += len;
-        pos = (SHORT)((bytes * (SHORT_MAX - 1)) / total);
 
-        m_progressBar.SetRange(0, SHORT_MAX);
-        m_progressBar.SetPos(pos + 1);
-        m_progressBar.SetPos(pos);
-        m_progressBar.SetRange(0, SHORT_MAX - 1);
+        text.Format(TEXT("%.0lf%%"), (double)bytes / total * 100);
+        m_progressLbl.SetWindowText(text);
     }
 
-    m_progressBar.SetRange(0, SHORT_MAX);
-    m_progressBar.SetPos(SHORT_MAX);
+    m_progressLbl.SetWindowText(TEXT("DONE"));
 
     in->Close();
     out->Close();

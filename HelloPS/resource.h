@@ -24,9 +24,9 @@
 #define IDC_SENSITIVITY_EDT_3           1017
 #define IDC_DELAY_EDT_1                 1018
 #define IDC_DELAY_EDT_2                 1019
-#define IDC_PROGRESS_BAR                1020
-#define IDC_OSD_EDT_1                   1021
-#define IDC_OSD_EDT_2                   1022
+#define IDC_OSD_EDT_1                   1020
+#define IDC_OSD_EDT_2                   1021
+#define IDC_PROGRESS_LBL                1022
 
 // Next default values for new objects
 //

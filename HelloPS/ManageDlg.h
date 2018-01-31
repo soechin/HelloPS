@@ -38,5 +38,5 @@ class CManageDlg : public CDialogEx {
     CComboBox m_categoryLst;
     CListBox m_weaponLst1;
     CListBox m_weaponLst2;
-    CProgressCtrl m_progressBar;
+    CStatic m_progressLbl;
 };
