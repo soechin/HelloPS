@@ -997,12 +997,11 @@ void CHelloPSDlg::DrawOSD() {
     th = 0;
 
     for (int x = 50; x <= 400; x += 50) {
-        double t0 = m_osd2 / m_velocity;
-        double t1 = x / m_velocity;
-        double y0 = m_gravity * t0 * t0 / 2;
-        double y1 = m_gravity * t1 * t1 / 2;
-        double y2 = tan((m_osd1 / m_zoom) * (M_PI / 180)) * x;
-        int d = (int)((y1 - y0) / y2 * cy);
+        double v = m_velocity;
+        double g = m_gravity;
+        double a0 = asin(m_osd2 * g / (v * v)) * (180 / M_PI) / 2;
+        double a1 = asin(x * g / (v * v)) * (180 / M_PI) / 2;
+        int d = (int)(cy * (a1 - a0) / (m_osd1 / m_zoom) + 0.5);
 
         drops.insert(std::make_pair(x, d));
 
