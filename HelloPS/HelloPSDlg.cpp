@@ -996,7 +996,7 @@ void CHelloPSDlg::DrawOSD() {
     tw = 0;
     th = 0;
 
-    for (int x = 50; x <= 400; x += 50) {
+    for (int x = 50; x <= 500; x += 50) {
         double v = m_velocity;
         double g = m_gravity;
         double a0 = asin(m_osd2 * g / (v * v)) * (180 / M_PI) / 2;
@@ -1026,26 +1026,36 @@ void CHelloPSDlg::DrawOSD() {
     }
 
     // resize window
-    m_osdWnd->SetWindowPos(NULL, cx, cy, 16 + tw * 2, ch + th, SWP_NOZORDER | SWP_NOACTIVATE);
+    m_osdWnd->SetWindowPos(NULL, cx - 16, cy, tw + 32, ch + th, SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
     m_osdWnd->GetClientRect(&rect);
     dc->FillRect(&rect, brush);
 
     for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
-        if ((it->first % 100) == 0) {
+        if ((it->first % 200) == 0) {
             text.Format(TEXT("%d"), it->first / 100);
-            rect.left = 12 + (((it->first % 200) == 0) ? tw : 0);
+            rect.left = 0;
             rect.top = it->second - th / 2;
             rect.right = rect.left + tw;
             rect.bottom = rect.top + th;
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
 
-            dc->MoveTo(3, it->second);
-            dc->LineTo(10, it->second);
+            dc->MoveTo(12, it->second);
+            dc->LineTo(21, it->second);
+        } else if ((it->first % 100) == 0) {
+            text.Format(TEXT("%d"), it->first / 100);
+            rect.left = 32 - tw;
+            rect.top = it->second - th / 2;
+            rect.right = rect.left + tw;
+            rect.bottom = rect.top + th;
+            dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
+
+            dc->MoveTo(12, it->second);
+            dc->LineTo(21, it->second);
         } else {
-            dc->MoveTo(3, it->second);
-            dc->LineTo(5, it->second);
+            dc->MoveTo(15, it->second);
+            dc->LineTo(18, it->second);
         }
     }
 
