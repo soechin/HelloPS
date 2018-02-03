@@ -32,6 +32,7 @@ BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
     ON_EN_KILLFOCUS(IDC_DELAY_EDT_2, &CHelloPSDlg::OnEnKillfocusDelayEdt2)
     ON_EN_KILLFOCUS(IDC_OSD_EDT_1, &CHelloPSDlg::OnEnKillfocusOsdEdt1)
     ON_EN_KILLFOCUS(IDC_OSD_EDT_2, &CHelloPSDlg::OnEnKillfocusOsdEdt2)
+    ON_EN_KILLFOCUS(IDC_OSD_EDT_3, &CHelloPSDlg::OnEnKillfocusOsdEdt3)
 END_MESSAGE_MAP()
 
 CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG) {
@@ -53,6 +54,7 @@ void CHelloPSDlg::DoDataExchange(CDataExchange *pDX) {
     DDX_Control(pDX, IDC_DELAY_EDT_2, m_delayEdt2);
     DDX_Control(pDX, IDC_OSD_EDT_1, m_osdEdt1);
     DDX_Control(pDX, IDC_OSD_EDT_2, m_osdEdt2);
+    DDX_Control(pDX, IDC_OSD_EDT_3, m_osdEdt3);
 }
 
 BOOL CHelloPSDlg::OnInitDialog() {
@@ -263,7 +265,7 @@ void CHelloPSDlg::UIFromDatabase() {
     index = -1;
 
     stmt.prepare(&m_sqlite, "SELECT Name FROM Sights "
-        "ORDER BY Name");
+        "ORDER BY Zoom");
 
     while (stmt.step()) {
         stmt.column("Name", name);
@@ -319,7 +321,7 @@ void CHelloPSDlg::UIFromDatabase() {
     index = -1;
 
     stmt.prepare(&m_sqlite, "SELECT Name FROM Sights "
-        "ORDER BY Name");
+        "ORDER BY Zoom");
 
     while (stmt.step()) {
         stmt.column("Name", name);
@@ -377,6 +379,10 @@ void CHelloPSDlg::UIFromDatabase() {
     ReadSetting("Osd2", osd);
     text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
     m_osdEdt2.SetWindowText(text);
+
+    ReadSetting("Osd3", osd);
+    text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
+    m_osdEdt3.SetWindowText(text);
 }
 
 void CHelloPSDlg::ReadSetting(std::string key, std::string &value) {
@@ -457,7 +463,7 @@ void CHelloPSDlg::OnUpdateAction() {
 
         if (category == "Sniper Rifle") {
             m_recoil = 0;
-            m_gravity = 7.5;
+            m_gravity = m_osd3;
         } else {
             m_gravity = 0;
         }
@@ -507,6 +513,8 @@ void CHelloPSDlg::OnUpdateAction() {
     m_osd1 = _ttof(text) / 2;
     m_osdEdt2.GetWindowText(text);
     m_osd2 = _ttoi(text);
+    m_osdEdt3.GetWindowText(text);
+    m_osd3 = _ttoi(text);
 
     // draw osd
     DrawOSD();
@@ -524,6 +532,7 @@ void CHelloPSDlg::OnUpdateEnabled() {
     m_delayEdt2.EnableWindow(!m_enabled);
     m_osdEdt1.EnableWindow(!m_enabled);
     m_osdEdt2.EnableWindow(!m_enabled);
+    m_osdEdt3.EnableWindow(!m_enabled);
 
     OnUpdateAction();
 }
@@ -695,6 +704,17 @@ void CHelloPSDlg::OnEnKillfocusOsdEdt2() {
     m_osdEdt2.GetWindowText(text);
     osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
     WriteSetting("Osd2", osd);
+
+    OnUpdateAction();
+}
+
+void CHelloPSDlg::OnEnKillfocusOsdEdt3() {
+    CString text;
+    std::string osd;
+
+    m_osdEdt3.GetWindowText(text);
+    osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Osd3", osd);
 
     OnUpdateAction();
 }
@@ -996,21 +1016,24 @@ void CHelloPSDlg::DrawOSD() {
     tw = 0;
     th = 0;
 
-    for (int x = 50; x <= 500; x += 50) {
+    for (int x1 = 50; x1 <= 500; x1 += 50) {
+        int x0 = m_osd2;
         double v = m_velocity;
         double g = m_gravity;
-        double a0 = asin(m_osd2 * g / (v * v)) * (180 / M_PI) / 2;
-        double a1 = asin(x * g / (v * v)) * (180 / M_PI) / 2;
-        int d = (int)(cy * (a1 - a0) / (m_osd1 / m_zoom) + 0.5);
+        double f = m_osd1 * (M_PI / 180);
+        double z = m_zoom;
+        double a0 = asin((x0 * g) / (v * v)) / 2;
+        double a1 = asin((x1 * g) / (v * v)) / 2;
+        int d = (int)((a1 - a0) * (cy * z / f) + 0.5);
 
-        drops.insert(std::make_pair(x, d));
+        drops.insert(std::make_pair(x1, d));
 
         if (d > ch) {
             ch = d;
         }
 
-        if ((x % 100) == 0) {
-            text.Format(TEXT("%d"), x / 100);
+        if ((x1 % 100) == 0) {
+            text.Format(TEXT("%d"), x1 / 100);
             rect.left = 0;
             rect.top = 0;
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP | DT_CALCRECT);

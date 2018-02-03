@@ -27,6 +27,7 @@
 #define IDC_OSD_EDT_1                   1020
 #define IDC_OSD_EDT_2                   1021
 #define IDC_PROGRESS_LBL                1022
+#define IDC_OSD_EDT_3                   1023
 
 // Next default values for new objects
 //
@@ -34,7 +35,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        202
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1023
+#define _APS_NEXT_CONTROL_VALUE         1024
 #define _APS_NEXT_SYMED_VALUE           103
 #endif
 #endif
