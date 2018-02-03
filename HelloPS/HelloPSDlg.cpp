@@ -108,6 +108,8 @@ BOOL CHelloPSDlg::OnInitDialog() {
     m_osdWnd = new CWnd();
     m_osdBg = RGB(0, 0, 0);
     m_osdFg = RGB(255, 0, 0);
+    m_osdFg2 = RGB(0, 255, 0);
+    m_osdDist = 0;
 
     m_osdWnd->CreateEx(wsex, m_osdClass, NULL, ws, 0, 0, 1, 1, NULL, NULL, NULL);
     m_osdWnd->SetLayeredWindowAttributes(m_osdBg, 0, LWA_COLORKEY);
@@ -777,7 +779,7 @@ void CHelloPSDlg::TimerFunc1() {
             m_action = 2;
             PostMessage(WM_UPDATE_ACTION);
         }
-    } else if ((GetAsyncKeyState(0xc0) & 0x8000) != 0 || // '`'
+    } else if ((GetAsyncKeyState(VK_OEM_3) & 0x8000) != 0 || // '`'
         (GetAsyncKeyState(0x33) & 0x8000) != 0 || // '3'
         (GetAsyncKeyState(0x34) & 0x8000) != 0 || // '4'
         (GetAsyncKeyState(0x35) & 0x8000) != 0) { // '5'
@@ -787,6 +789,16 @@ void CHelloPSDlg::TimerFunc1() {
             m_action = 0;
             PostMessage(WM_UPDATE_ACTION);
         }
+    } else if ((GetAsyncKeyState(VK_XBUTTON1) & 0x8000) != 0) { // 'X1'
+        CSingleLock locker(&m_mutex, TRUE);
+
+        m_osdDist = std::min(m_osdDist + 50, 600);
+        PostMessage(WM_UPDATE_ACTION);
+    } else if ((GetAsyncKeyState(VK_XBUTTON2) & 0x8000) != 0) { // 'X2'
+        CSingleLock locker(&m_mutex, TRUE);
+
+        m_osdDist = std::max(m_osdDist - 50, 0);
+        PostMessage(WM_UPDATE_ACTION);
     }
 
     // Q-button
@@ -973,6 +985,8 @@ void CHelloPSDlg::DrawOSD() {
     CRect rect;
     std::map<int, int> drops;
     int cx, cy, ch, tw, th;
+    int x0, x1, d, r1, r2;
+    double v, g, z, fx, fy, a0, a1;
 
     if (!m_enabled || (m_action != 1 && m_action != 2) || m_gravity <= 0) {
         if (m_osdWnd->IsWindowVisible()) {
@@ -1016,15 +1030,20 @@ void CHelloPSDlg::DrawOSD() {
     tw = 0;
     th = 0;
 
-    for (int x1 = 50; x1 <= 500; x1 += 50) {
-        int x0 = m_osd2;
-        double v = m_velocity;
-        double g = m_gravity;
-        double f = m_osd1 * (M_PI / 180);
-        double z = m_zoom;
-        double a0 = asin((x0 * g) / (v * v)) / 2;
-        double a1 = asin((x1 * g) / (v * v)) / 2;
-        int d = (int)((a1 - a0) * (cy * z / f) + 0.5);
+    // g-formula
+    v = m_velocity;
+    g = m_gravity;
+    z = m_zoom; // zoom level
+    fy = m_osd1 * (M_PI / 180); // y-fov
+    fx = atan(tan(fy) * ((double)cx / cy)) * 2; // x-fov
+    x0 = m_osd2; // zeroing distance
+    a0 = asin((x0 * g) / (v * v)) / 2; // zeroing angle
+    r1 = (int)(atan(4.0 / v) * cx * z / fx + 0.5); // walk
+    r2 = (int)(atan(6.5 / v) * cx * z / fx + 0.5); // sprint
+
+    for (x1 = 50; x1 <= 600; x1 += 50) {
+        a1 = asin((x1 * g) / (v * v)) / 2; // sight angle
+        d = (int)((a1 - a0) * (cy * z / fy) + 0.5);
 
         drops.insert(std::make_pair(x1, d));
 
@@ -1049,36 +1068,42 @@ void CHelloPSDlg::DrawOSD() {
     }
 
     // resize window
-    m_osdWnd->SetWindowPos(NULL, cx - 16, cy, tw + 32, ch + th, SWP_NOZORDER | SWP_NOACTIVATE);
+    m_osdWnd->SetWindowPos(NULL, cx - tw - r2 - 16, cy, (tw + r2) * 2 + 32, ch + th,
+        SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
     m_osdWnd->GetClientRect(&rect);
     dc->FillRect(&rect, brush);
 
+    dc->MoveTo(0, 0);
+    dc->LineTo(r2 - r1, 0);
+    dc->MoveTo((tw + r2) * 2 + 32 - (r2 - r1), 0);
+    dc->LineTo((tw + r2) * 2 + 32, 0);
+
     for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
         if ((it->first % 200) == 0) {
             text.Format(TEXT("%d"), it->first / 100);
-            rect.left = 0;
+            rect.left = r2;
             rect.top = it->second - th / 2;
             rect.right = rect.left + tw;
             rect.bottom = rect.top + th;
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
 
-            dc->MoveTo(12, it->second);
-            dc->LineTo(21, it->second);
+            dc->MoveTo((tw + r2) + 12, it->second);
+            dc->LineTo((tw + r2) + 21, it->second);
         } else if ((it->first % 100) == 0) {
             text.Format(TEXT("%d"), it->first / 100);
-            rect.left = 32 - tw;
+            rect.left = (tw + r2) + 32;
             rect.top = it->second - th / 2;
             rect.right = rect.left + tw;
             rect.bottom = rect.top + th;
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
 
-            dc->MoveTo(12, it->second);
-            dc->LineTo(21, it->second);
+            dc->MoveTo((tw + r2) + 12, it->second);
+            dc->LineTo((tw + r2) + 21, it->second);
         } else {
-            dc->MoveTo(15, it->second);
-            dc->LineTo(18, it->second);
+            dc->MoveTo((tw + r2) + 15, it->second);
+            dc->LineTo((tw + r2) + 18, it->second);
         }
     }
 
@@ -1086,6 +1111,46 @@ void CHelloPSDlg::DrawOSD() {
     dc->SelectObject(pen0);
     pen->DeleteObject();
     delete pen;
+
+    if (m_osdDist > 0) {
+        // pen 2
+        pen = new CPen();
+        pen->CreatePen(PS_SOLID, 1, m_osdFg2);
+        pen0 = dc->SelectObject(pen);
+
+        x1 = m_osdDist;
+        a1 = asin((x1 * g) / (v * v)) / 2; // sight angle
+        d = (int)((a1 - a0) * (cy * z / fy) + 0.5);
+
+        rect.left = (tw + r2) + 12;
+        rect.top = d - 4;
+        rect.right = rect.left + 9;
+        rect.bottom = rect.top + 9;
+
+        dc->MoveTo((tw + r2) + 12, d);
+        dc->LineTo((tw + r2) + 21, d);
+        dc->MoveTo((tw + r2) + 16, d - 4);
+        dc->LineTo((tw + r2) + 16, d + 4);
+
+
+        // delete pen2
+        dc->SelectObject(pen0);
+        pen->DeleteObject();
+        delete pen;
+
+        dc->SetTextColor(m_osdFg2);
+        text.Format(TEXT("%dm"), m_osdDist);
+        rect.left = (tw + r2) + 32;
+        rect.top = d - th / 2;
+        rect.right = rect.left + tw + r2;
+        rect.bottom = rect.top + th;
+        dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
+    }
+
+    // delete font
+    dc->SelectObject(font0);
+    font->DeleteObject();
+    delete font;
 
     // delete brush
     dc->SelectObject(brush0);
