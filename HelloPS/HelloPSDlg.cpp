@@ -226,12 +226,12 @@ void CHelloPSDlg::CloseDatabase() {
 
 void CHelloPSDlg::UIFromDatabase() {
     CString text;
-    std::string name, weapon, sight, duration, sensitivity, delay, osd;
+    std::string name, weapon1, weapon2, sight1, sight2, duration, sensitivity, delay, osd;
     soechin::sqlite_stmt stmt;
     int index;
 
     // primary weapon
-    ReadSetting("Weapon1", weapon);
+    ReadSetting("Weapon1", weapon1);
 
     m_weaponLst1.ResetContent();
     m_weaponLst1.AddString(TEXT("Disabled"));
@@ -243,7 +243,7 @@ void CHelloPSDlg::UIFromDatabase() {
     while (stmt.step()) {
         stmt.column("Name", name);
 
-        if (index < 0 && name == weapon) {
+        if (index < 0 && name == weapon1) {
             index = m_weaponLst1.GetCount();
         }
 
@@ -261,7 +261,7 @@ void CHelloPSDlg::UIFromDatabase() {
     }
 
     // primary sight
-    ReadSetting("Sight: " + weapon, sight);
+    ReadSetting("Sight: " + weapon1, sight1);
 
     m_sightLst1.ResetContent();
     index = -1;
@@ -272,7 +272,7 @@ void CHelloPSDlg::UIFromDatabase() {
     while (stmt.step()) {
         stmt.column("Name", name);
 
-        if (index < 0 && name == sight) {
+        if (index < 0 && name == sight1) {
             index = m_sightLst1.GetCount();
         }
 
@@ -287,7 +287,7 @@ void CHelloPSDlg::UIFromDatabase() {
     }
 
     // secondary weapon
-    ReadSetting("Weapon2", weapon);
+    ReadSetting("Weapon2", weapon2);
 
     m_weaponLst2.ResetContent();
     m_weaponLst2.AddString(TEXT("Disabled"));
@@ -299,7 +299,7 @@ void CHelloPSDlg::UIFromDatabase() {
     while (stmt.step()) {
         stmt.column("Name", name);
 
-        if (index < 0 && name == weapon) {
+        if (index < 0 && name == weapon2) {
             index = m_weaponLst2.GetCount();
         }
 
@@ -317,7 +317,7 @@ void CHelloPSDlg::UIFromDatabase() {
     }
 
     // secondary sight
-    ReadSetting("Sight: " + weapon, sight);
+    ReadSetting("Sight: " + weapon2, sight2);
 
     m_sightLst2.ResetContent();
     index = -1;
@@ -328,7 +328,7 @@ void CHelloPSDlg::UIFromDatabase() {
     while (stmt.step()) {
         stmt.column("Name", name);
 
-        if (index < 0 && name == sight) {
+        if (index < 0 && name == sight2) {
             index = m_sightLst2.GetCount();
         }
 
@@ -378,11 +378,11 @@ void CHelloPSDlg::UIFromDatabase() {
     text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
     m_osdEdt1.SetWindowText(text);
 
-    ReadSetting("Osd2", osd);
+    ReadSetting("Osd2: " + weapon1, osd);
     text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
     m_osdEdt2.SetWindowText(text);
 
-    ReadSetting("Osd3", osd);
+    ReadSetting("Osd3: " + weapon1, osd);
     text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
     m_osdEdt3.SetWindowText(text);
 }
@@ -701,22 +701,34 @@ void CHelloPSDlg::OnEnKillfocusOsdEdt1() {
 
 void CHelloPSDlg::OnEnKillfocusOsdEdt2() {
     CString text;
-    std::string osd;
+    std::string weapon, osd;
+
+    m_weaponLst1.GetWindowText(text);
+    weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
     m_osdEdt2.GetWindowText(text);
     osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Osd2", osd);
+
+    if (!weapon.empty()) {
+        WriteSetting("Osd2: " + weapon, osd);
+    }
 
     OnUpdateAction();
 }
 
 void CHelloPSDlg::OnEnKillfocusOsdEdt3() {
     CString text;
-    std::string osd;
+    std::string weapon, osd;
+
+    m_weaponLst1.GetWindowText(text);
+    weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
     m_osdEdt3.GetWindowText(text);
     osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Osd3", osd);
+
+    if (!weapon.empty()) {
+        WriteSetting("Osd3: " + weapon, osd);
+    }
 
     OnUpdateAction();
 }
@@ -750,14 +762,14 @@ void __stdcall CHelloPSDlg::TimerFunc2(LPVOID lpParam, BOOLEAN bTimer) {
 
 void CHelloPSDlg::TimerFunc1() {
     if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
-        if ((GetAsyncKeyState(VK_F1) & 0x8000) != 0) { // ALT-F1
+        if ((GetAsyncKeyState(VK_F1) & 0x0001) != 0) { // ALT-F1
             CSingleLock locker(&m_mutex, TRUE);
 
             if (!m_enabled) {
                 m_enabled = true;
                 PostMessage(WM_UPDATE_ENABLED);
             }
-        } else if ((GetAsyncKeyState(VK_F2) & 0x8000) != 0) { // ALT-F2
+        } else if ((GetAsyncKeyState(VK_F2) & 0x0001) != 0) { // ALT-F2
             CSingleLock locker(&m_mutex, TRUE);
 
             if (m_enabled) {
@@ -765,36 +777,36 @@ void CHelloPSDlg::TimerFunc1() {
                 PostMessage(WM_UPDATE_ENABLED);
             }
         }
-    } else if ((GetAsyncKeyState(0x31) & 0x8000) != 0) { // '1'
+    } else if ((GetAsyncKeyState(0x31) & 0x0001) != 0) { // '1'
         CSingleLock locker(&m_mutex, TRUE);
 
         if (m_action != 1) {
             m_action = 1;
             PostMessage(WM_UPDATE_ACTION);
         }
-    } else if ((GetAsyncKeyState(0x32) & 0x8000) != 0) { // '2'
+    } else if ((GetAsyncKeyState(0x32) & 0x0001) != 0) { // '2'
         CSingleLock locker(&m_mutex, TRUE);
 
         if (m_action != 2) {
             m_action = 2;
             PostMessage(WM_UPDATE_ACTION);
         }
-    } else if ((GetAsyncKeyState(VK_OEM_3) & 0x8000) != 0 || // '`'
-        (GetAsyncKeyState(0x33) & 0x8000) != 0 || // '3'
-        (GetAsyncKeyState(0x34) & 0x8000) != 0 || // '4'
-        (GetAsyncKeyState(0x35) & 0x8000) != 0) { // '5'
+    } else if ((GetAsyncKeyState(VK_OEM_3) & 0x0001) != 0 || // '`'
+        (GetAsyncKeyState(0x33) & 0x0001) != 0 || // '3'
+        (GetAsyncKeyState(0x34) & 0x0001) != 0 || // '4'
+        (GetAsyncKeyState(0x35) & 0x0001) != 0) { // '5'
         CSingleLock locker(&m_mutex, TRUE);
 
         if (m_action != 0) {
             m_action = 0;
             PostMessage(WM_UPDATE_ACTION);
         }
-    } else if ((GetAsyncKeyState(VK_XBUTTON1) & 0x8000) != 0) { // 'X1'
+    } else if ((GetAsyncKeyState(VK_XBUTTON1) & 0x0001) != 0) { // 'X1'
         CSingleLock locker(&m_mutex, TRUE);
 
         m_osdDist = std::min(m_osdDist + 50, 600);
         PostMessage(WM_UPDATE_ACTION);
-    } else if ((GetAsyncKeyState(VK_XBUTTON2) & 0x8000) != 0) { // 'X2'
+    } else if ((GetAsyncKeyState(VK_XBUTTON2) & 0x0001) != 0) { // 'X2'
         CSingleLock locker(&m_mutex, TRUE);
 
         m_osdDist = std::max(m_osdDist - 50, 0);
@@ -1068,7 +1080,7 @@ void CHelloPSDlg::DrawOSD() {
     }
 
     // resize window
-    m_osdWnd->SetWindowPos(NULL, cx - tw - r2 - 16, cy, (tw + r2) * 2 + 32, ch + th,
+    m_osdWnd->SetWindowPos(NULL, cx - tw - r2 - 16, cy, (tw + r2 + 32) * 2, ch + th,
         SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
@@ -1122,16 +1134,10 @@ void CHelloPSDlg::DrawOSD() {
         a1 = asin((x1 * g) / (v * v)) / 2; // sight angle
         d = (int)((a1 - a0) * (cy * z / fy) + 0.5);
 
-        rect.left = (tw + r2) + 12;
-        rect.top = d - 4;
-        rect.right = rect.left + 9;
-        rect.bottom = rect.top + 9;
-
         dc->MoveTo((tw + r2) + 12, d);
         dc->LineTo((tw + r2) + 21, d);
         dc->MoveTo((tw + r2) + 16, d - 4);
         dc->LineTo((tw + r2) + 16, d + 4);
-
 
         // delete pen2
         dc->SelectObject(pen0);
@@ -1142,7 +1148,7 @@ void CHelloPSDlg::DrawOSD() {
         text.Format(TEXT("%dm"), m_osdDist);
         rect.left = (tw + r2) + 32;
         rect.top = d - th / 2;
-        rect.right = rect.left + tw + r2;
+        rect.right = rect.left + tw + r2 + 32;
         rect.bottom = rect.top + th;
         dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
     }
