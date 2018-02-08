@@ -84,7 +84,7 @@ class CHelloPSDlg : public CDialogEx {
     CString m_osdClass;
     CWnd *m_osdWnd;
     COLORREF m_osdBg;
-    COLORREF m_osdFg;
+    COLORREF m_osdFg1;
     COLORREF m_osdFg2;
     int m_osdDist;
     // weapon data

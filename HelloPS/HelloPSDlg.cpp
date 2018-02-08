@@ -106,12 +106,12 @@ BOOL CHelloPSDlg::OnInitDialog() {
     // osd
     cs = CS_HREDRAW | CS_VREDRAW;
     ws = WS_POPUP;
-    wsex = /*WS_EX_LAYERED | */WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_TRANSPARENT;
+    wsex = WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_TRANSPARENT;
 
     m_osdClass = AfxRegisterWndClass(cs, NULL, NULL, NULL);
     m_osdWnd = new CWnd();
     m_osdBg = RGB(0, 0, 0);
-    m_osdFg = RGB(255, 0, 0);
+    m_osdFg1 = RGB(255, 0, 0);
     m_osdFg2 = RGB(0, 255, 0);
     m_osdDist = 0;
 
@@ -925,6 +925,11 @@ void CHelloPSDlg::TimerFunc2() {
         // idle
         m_idle = false;
 
+        // check category
+        if (m_category == "Sniper Rifle") {
+            m_idle = true;
+        }
+
         // check cursor
         memset(&cursor, 0, sizeof(cursor));
         cursor.cbSize = sizeof(cursor);
@@ -964,7 +969,7 @@ void CHelloPSDlg::TimerFunc2() {
     m_lbutton = lbutton;
 
     // abort
-    if (m_idle || (m_action != 1 && m_action != 2) || !m_enabled) {
+    if (m_idle || m_action == 0 || !m_enabled) {
         return;
     }
 
@@ -1061,7 +1066,7 @@ void CHelloPSDlg::DrawOSD() {
     int xres, yres, walk, sprint, x, d, maxd, maxw, maxh;
     double xfov, yfov, a0, a1;
 
-    if (!m_enabled || (m_action != 1 && m_action != 2)) {
+    if (!m_enabled) {
         if (m_osdWnd->IsWindowVisible()) {
             m_osdWnd->ShowWindow(SW_HIDE);
         }
@@ -1092,20 +1097,23 @@ void CHelloPSDlg::DrawOSD() {
     yfov = m_graphicsFov * (M_PI / 180);
     xfov = atan(tan(yfov) * ((double)xres / yres)) * 2;
 
+    if (m_gravity > 0 && m_action != 0) {
+        a0 = asin((m_zeroing * m_gravity) / (m_velocity * m_velocity)) / 2;
+
+        for (x = 50; x <= 600; x += 50) {
+            a1 = asin((x * m_gravity) / (m_velocity * m_velocity)) / 2;
+            d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
+
+            drops.insert(std::make_pair(x, d));
+        }
+    }
+
     walk = (int)(atan(4.0 / m_velocity) * m_zoom * xres / xfov + 0.5);
     sprint = (int)(atan(6.5 / m_velocity) * m_zoom * xres / xfov + 0.5);
 
-    for (x = 50; x <= 600; x += 50) {
-        a0 = asin((m_zeroing * m_gravity) / (m_velocity * m_velocity)) / 2;
-        a1 = asin((x * m_gravity) / (m_velocity * m_velocity)) / 2;
-        d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
-
-        drops.insert(std::make_pair(x, d));
-    }
-
     // dc
     dc = m_osdWnd->GetDC();
-    dc->SetTextColor(m_osdFg);
+    dc->SetTextColor(m_osdFg1);
     dc->SetBkColor(m_osdBg);
 
     // brush
@@ -1113,9 +1121,9 @@ void CHelloPSDlg::DrawOSD() {
     brush->CreateSolidBrush(m_osdBg);
     brush0 = dc->SelectObject(brush);
 
-    // pen
+    // pen1
     pen = new CPen();
-    pen->CreatePen(PS_SOLID, 1, m_osdFg);
+    pen->CreatePen(PS_SOLID, 1, m_osdFg1);
     pen0 = dc->SelectObject(pen);
 
     // font
@@ -1124,11 +1132,9 @@ void CHelloPSDlg::DrawOSD() {
         OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH, TEXT("Arial"));
     font0 = dc->SelectObject(font);
 
-    // window height
+    // window width, height
     maxd = 0;
-
-    // text width/height
-    maxw = std::max(walk, sprint);
+    maxw = 0;
     maxh = 0;
 
     for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
@@ -1153,78 +1159,105 @@ void CHelloPSDlg::DrawOSD() {
         }
     }
 
+    // add center size
+    maxw += 8;
+
+    if (maxw < sprint) {
+        maxw = sprint;
+    }
+
+    if (maxh < 8) {
+        maxh = 8;
+    }
+
     // resize window
-    m_osdWnd->SetWindowPos(NULL, xres - maxw - 16, yres, (maxw + 16) * 2, maxd + maxh,
+    m_osdWnd->SetWindowPos(NULL, xres - maxw, yres, maxw * 2, maxd + maxh,
         SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
     m_osdWnd->GetClientRect(&rect);
     dc->FillRect(&rect, brush);
 
-    dc->MoveTo(0, 0);
-    dc->LineTo(sprint - walk, 0);
-    dc->MoveTo((maxw + sprint) * 2 + 32 - (sprint - walk), 0);
-    dc->LineTo((maxw + sprint) * 2 + 32, 0);
-
     for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
-        if ((it->first % 200) == 0) {
-            text.Format(TEXT("%d"), it->first / 100);
-            rect.left = sprint;
-            rect.top = it->second - maxh / 2;
-            rect.right = rect.left + maxw;
-            rect.bottom = rect.top + maxh;
+        x = it->first;
+        d = it->second;
+
+        if ((x % 200) == 0) {
+            text.Format(TEXT("%d"), x / 100);
+            rect.left = 0;
+            rect.top = d - maxh / 2;
+            rect.right = maxw - 8;
+            rect.bottom = d + maxh / 2;
+            dc->DrawText(text, &rect, DT_RIGHT | DT_TOP);
+
+            dc->MoveTo(maxw - 4, d);
+            dc->LineTo(maxw + 5, d);
+        } else if ((x % 100) == 0) {
+            text.Format(TEXT("%d"), x / 100);
+            rect.left = maxw + 8;
+            rect.top = d - maxh / 2;
+            rect.right = (maxw + 8) * 2;
+            rect.bottom = d + maxh / 2;
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
 
-            dc->MoveTo((maxw + sprint) + 12, it->second);
-            dc->LineTo((maxw + sprint) + 21, it->second);
-        } else if ((it->first % 100) == 0) {
-            text.Format(TEXT("%d"), it->first / 100);
-            rect.left = (maxw + sprint) + 32;
-            rect.top = it->second - maxh / 2;
-            rect.right = rect.left + maxw;
-            rect.bottom = rect.top + maxh;
-            dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
-
-            dc->MoveTo((maxw + sprint) + 12, it->second);
-            dc->LineTo((maxw + sprint) + 21, it->second);
+            dc->MoveTo(maxw - 4, d);
+            dc->LineTo(maxw + 5, d);
         } else {
-            dc->MoveTo((maxw + sprint) + 15, it->second);
-            dc->LineTo((maxw + sprint) + 18, it->second);
+            dc->MoveTo(maxw - 2, d);
+            dc->LineTo(maxw + 3, d);
         }
     }
 
-    // delete pen
+    // delete pen1
     dc->SelectObject(pen0);
     pen->DeleteObject();
     delete pen;
 
-    if (m_osdDist > 0) {
-        // pen 2
-        pen = new CPen();
-        pen->CreatePen(PS_SOLID, 1, m_osdFg2);
-        pen0 = dc->SelectObject(pen);
+    // pen 2
+    pen = new CPen();
+    pen->CreatePen(PS_SOLID, 1, m_osdFg2);
+    pen0 = dc->SelectObject(pen);
 
+    if (m_action != 0) {
+        dc->MoveTo(maxw - walk, 0);
+        dc->LineTo(maxw - sprint, 0);
+        dc->MoveTo(maxw + walk, 0);
+        dc->LineTo(maxw + sprint, 0);
+    }
+
+    if (m_osdDist < 0) {
+        m_osdDist = 0;
+    } else if (m_osdDist > 600) {
+        m_osdDist = 600;
+    }
+
+    if (m_action != 0 && m_gravity > 0 && m_osdDist > 0) {
         a1 = asin((m_osdDist * m_gravity) / (m_velocity * m_velocity)) / 2;
         d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
 
-        dc->MoveTo((maxw + sprint) + 12, d);
-        dc->LineTo((maxw + sprint) + 21, d);
-        dc->MoveTo((maxw + sprint) + 16, d - 4);
-        dc->LineTo((maxw + sprint) + 16, d + 4);
-
-        // delete pen2
-        dc->SelectObject(pen0);
-        pen->DeleteObject();
-        delete pen;
+        dc->MoveTo(maxw - 4, d);
+        dc->LineTo(maxw + 5, d);
+        dc->MoveTo(maxw, d - 4);
+        dc->LineTo(maxw, d + 5);
 
         dc->SetTextColor(m_osdFg2);
         text.Format(TEXT("%dm"), m_osdDist);
-        rect.left = (maxw + sprint) + 32;
+        rect.left = maxw + 8;
         rect.top = d - maxh / 2;
-        rect.right = rect.left + maxw + sprint + 32;
-        rect.bottom = rect.top + maxh;
+        rect.right = (maxw + 8) * 2;
+        rect.bottom = d + maxh / 2;
         dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
+    } else {
+        dc->MoveTo(maxw - 4, 0);
+        dc->LineTo(maxw + 5, 0);
+        dc->MoveTo(maxw, 0);
+        dc->LineTo(maxw, 5);
     }
+
+    // delete pen2
+    dc->SelectObject(pen0);
+    pen->DeleteObject();
+    delete pen;
 
     // delete font
     dc->SelectObject(font0);
