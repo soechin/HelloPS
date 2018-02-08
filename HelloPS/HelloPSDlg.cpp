@@ -23,16 +23,18 @@ BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
     ON_CBN_SELCHANGE(IDC_WEAPON_LST_2, &CHelloPSDlg::OnCbnSelchangeWeaponLst2)
     ON_CBN_SELCHANGE(IDC_SIGHT_LST_1, &CHelloPSDlg::OnCbnSelchangeSightLst1)
     ON_CBN_SELCHANGE(IDC_SIGHT_LST_2, &CHelloPSDlg::OnCbnSelchangeSightLst2)
-    ON_EN_KILLFOCUS(IDC_DURATION_EDT_1, &CHelloPSDlg::OnEnKillfocusDurationEdt1)
-    ON_EN_KILLFOCUS(IDC_DURATION_EDT_2, &CHelloPSDlg::OnEnKillfocusDurationEdt2)
-    ON_EN_KILLFOCUS(IDC_SENSITIVITY_EDT_1, &CHelloPSDlg::OnEnKillfocusSensitivityEdt1)
-    ON_EN_KILLFOCUS(IDC_SENSITIVITY_EDT_2, &CHelloPSDlg::OnEnKillfocusSensitivityEdt2)
-    ON_EN_KILLFOCUS(IDC_SENSITIVITY_EDT_3, &CHelloPSDlg::OnEnKillfocusSensitivityEdt3)
-    ON_EN_KILLFOCUS(IDC_DELAY_EDT_1, &CHelloPSDlg::OnEnKillfocusDelayEdt1)
-    ON_EN_KILLFOCUS(IDC_DELAY_EDT_2, &CHelloPSDlg::OnEnKillfocusDelayEdt2)
-    ON_EN_KILLFOCUS(IDC_OSD_EDT_1, &CHelloPSDlg::OnEnKillfocusOsdEdt1)
-    ON_EN_KILLFOCUS(IDC_OSD_EDT_2, &CHelloPSDlg::OnEnKillfocusOsdEdt2)
-    ON_EN_KILLFOCUS(IDC_OSD_EDT_3, &CHelloPSDlg::OnEnKillfocusOsdEdt3)
+    ON_BN_CLICKED(IDC_PRIMARY_RAD, &CHelloPSDlg::OnBnClickedPrimaryRad)
+    ON_BN_CLICKED(IDC_SECONDARY_RAD, &CHelloPSDlg::OnBnClickedSecondaryRad)
+    ON_EN_KILLFOCUS(IDC_GRAVITY_EDT, &CHelloPSDlg::OnEnKillfocusGravityEdt)
+    ON_EN_KILLFOCUS(IDC_ZEROING_EDT, &CHelloPSDlg::OnEnKillfocusZeroingEdt)
+    ON_EN_KILLFOCUS(IDC_DURATION_BEGIN_EDT, &CHelloPSDlg::OnEnKillfocusDurationBeginEdt)
+    ON_EN_KILLFOCUS(IDC_DURATION_END_EDT, &CHelloPSDlg::OnEnKillfocusDurationEndEdt)
+    ON_EN_KILLFOCUS(IDC_SENSITIVITY_HIP_EDT, &CHelloPSDlg::OnEnKillfocusSensitivityHipEdt)
+    ON_EN_KILLFOCUS(IDC_SENSITIVITY_AIM_EDT, &CHelloPSDlg::OnEnKillfocusSensitivityAimEdt)
+    ON_EN_KILLFOCUS(IDC_SENSITIVITY_SCOPE_EDT, &CHelloPSDlg::OnEnKillfocusSensitivityScopeEdt)
+    ON_EN_KILLFOCUS(IDC_GRAPHICS_FPS_EDT, &CHelloPSDlg::OnEnKillfocusGraphicsFpsEdt)
+    ON_EN_KILLFOCUS(IDC_GRAPHICS_DELAY_EDT, &CHelloPSDlg::OnEnKillfocusGraphicsDelayEdt)
+    ON_EN_KILLFOCUS(IDC_GRAPHICS_FOV_EDT, &CHelloPSDlg::OnEnKillfocusGraphicsFovEdt)
 END_MESSAGE_MAP()
 
 CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG) {
@@ -45,16 +47,18 @@ void CHelloPSDlg::DoDataExchange(CDataExchange *pDX) {
     DDX_Control(pDX, IDC_WEAPON_LST_2, m_weaponLst2);
     DDX_Control(pDX, IDC_SIGHT_LST_1, m_sightLst1);
     DDX_Control(pDX, IDC_SIGHT_LST_2, m_sightLst2);
-    DDX_Control(pDX, IDC_DURATION_EDT_1, m_durationEdt1);
-    DDX_Control(pDX, IDC_DURATION_EDT_2, m_durationEdt2);
-    DDX_Control(pDX, IDC_SENSITIVITY_EDT_1, m_sensitivityEdt1);
-    DDX_Control(pDX, IDC_SENSITIVITY_EDT_2, m_sensitivityEdt2);
-    DDX_Control(pDX, IDC_SENSITIVITY_EDT_3, m_sensitivityEdt3);
-    DDX_Control(pDX, IDC_DELAY_EDT_1, m_delayEdt1);
-    DDX_Control(pDX, IDC_DELAY_EDT_2, m_delayEdt2);
-    DDX_Control(pDX, IDC_OSD_EDT_1, m_osdEdt1);
-    DDX_Control(pDX, IDC_OSD_EDT_2, m_osdEdt2);
-    DDX_Control(pDX, IDC_OSD_EDT_3, m_osdEdt3);
+    DDX_Control(pDX, IDC_PRIMARY_RAD, m_primaryRad);
+    DDX_Control(pDX, IDC_SECONDARY_RAD, m_secondaryRad);
+    DDX_Control(pDX, IDC_GRAVITY_EDT, m_gravityEdt);
+    DDX_Control(pDX, IDC_ZEROING_EDT, m_zeroingEdt);
+    DDX_Control(pDX, IDC_DURATION_BEGIN_EDT, m_durationBeginEdt);
+    DDX_Control(pDX, IDC_DURATION_END_EDT, m_durationEndEdt);
+    DDX_Control(pDX, IDC_SENSITIVITY_HIP_EDT, m_sensitivityHipEdt);
+    DDX_Control(pDX, IDC_SENSITIVITY_AIM_EDT, m_sensitivityAimEdt);
+    DDX_Control(pDX, IDC_SENSITIVITY_SCOPE_EDT, m_sensitivityScopeEdt);
+    DDX_Control(pDX, IDC_GRAPHICS_FPS_EDT, m_graphicsFpsEdt);
+    DDX_Control(pDX, IDC_GRAPHICS_DELAY_EDT, m_graphicsDelayEdt);
+    DDX_Control(pDX, IDC_GRAPHICS_FOV_EDT, m_graphicsFovEdt);
 }
 
 BOOL CHelloPSDlg::OnInitDialog() {
@@ -102,7 +106,7 @@ BOOL CHelloPSDlg::OnInitDialog() {
     // osd
     cs = CS_HREDRAW | CS_VREDRAW;
     ws = WS_POPUP;
-    wsex = WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_TRANSPARENT;
+    wsex = /*WS_EX_LAYERED | */WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_TRANSPARENT;
 
     m_osdClass = AfxRegisterWndClass(cs, NULL, NULL, NULL);
     m_osdWnd = new CWnd();
@@ -115,25 +119,27 @@ BOOL CHelloPSDlg::OnInitDialog() {
     m_osdWnd->SetLayeredWindowAttributes(m_osdBg, 0, LWA_COLORKEY);
 
     // weapon data
+    m_category = std::string();
     m_speed = 0;
     m_recoil = 0;
     m_factor = 0;
     m_angleMin = 0;
     m_angleMax = 0;
     m_burst = 0;
-    m_delay = 0; // first shot delay
     m_velocity = 0;
-    m_gravity = 0;
 
     // sight data
     m_zoom = 1.0;
 
     // settings
+    m_gravity = 11.25;
+    m_zeroing = 0;
+    m_durationBegin = 0;
+    m_durationEnd = 1;
     m_sensitivity = 0.3;
-    m_duration1 = 0;
-    m_duration2 = 1;
-    m_delay1 = 0; // input delay
-    m_delay2 = 0; // recovery delay
+    m_graphicsFps = 0; // input delay
+    m_graphicsDelay = 0; // recovery delay
+    m_graphicsFov = 55;
     m_vertical = 1.0;
     m_horizonal = 0.5;
 
@@ -178,8 +184,7 @@ void CHelloPSDlg::OpenDatabase() {
     m_sqlite.exec("CREATE TABLE IF NOT EXISTS WeaponsDB "
         "(Name TEXT NOT NULL UNIQUE, Faction TEXT, Category TEXT, "
         "Speed INTEGER, Recoil REAL, Factor REAL, AngleMin REAL, "
-        "AngleMax REAL, Burst REAL, Delay REAL, Velocity REAL, "
-        "PRIMARY KEY(Name));");
+        "AngleMax REAL, Burst REAL, Velocity REAL, PRIMARY KEY(Name));");
 
     // create table "Weapons1", "Weapons2"
     m_sqlite.exec("CREATE TABLE IF NOT EXISTS Weapons1 "
@@ -226,12 +231,12 @@ void CHelloPSDlg::CloseDatabase() {
 
 void CHelloPSDlg::UIFromDatabase() {
     CString text;
-    std::string name, weapon1, weapon2, sight1, sight2, duration, sensitivity, delay, osd;
+    std::string name, weapon, sight, action, str;
     soechin::sqlite_stmt stmt;
     int index;
 
     // primary weapon
-    ReadSetting("Weapon1", weapon1);
+    ReadSetting("Weapon1", weapon);
 
     m_weaponLst1.ResetContent();
     m_weaponLst1.AddString(TEXT("Disabled"));
@@ -243,7 +248,7 @@ void CHelloPSDlg::UIFromDatabase() {
     while (stmt.step()) {
         stmt.column("Name", name);
 
-        if (index < 0 && name == weapon1) {
+        if (index < 0 && name == weapon) {
             index = m_weaponLst1.GetCount();
         }
 
@@ -261,7 +266,7 @@ void CHelloPSDlg::UIFromDatabase() {
     }
 
     // primary sight
-    ReadSetting("Sight: " + weapon1, sight1);
+    ReadSetting(weapon, "Sight", sight);
 
     m_sightLst1.ResetContent();
     index = -1;
@@ -272,7 +277,7 @@ void CHelloPSDlg::UIFromDatabase() {
     while (stmt.step()) {
         stmt.column("Name", name);
 
-        if (index < 0 && name == sight1) {
+        if (index < 0 && name == sight) {
             index = m_sightLst1.GetCount();
         }
 
@@ -287,7 +292,7 @@ void CHelloPSDlg::UIFromDatabase() {
     }
 
     // secondary weapon
-    ReadSetting("Weapon2", weapon2);
+    ReadSetting("Weapon2", weapon);
 
     m_weaponLst2.ResetContent();
     m_weaponLst2.AddString(TEXT("Disabled"));
@@ -299,7 +304,7 @@ void CHelloPSDlg::UIFromDatabase() {
     while (stmt.step()) {
         stmt.column("Name", name);
 
-        if (index < 0 && name == weapon2) {
+        if (index < 0 && name == weapon) {
             index = m_weaponLst2.GetCount();
         }
 
@@ -317,7 +322,7 @@ void CHelloPSDlg::UIFromDatabase() {
     }
 
     // secondary sight
-    ReadSetting("Sight: " + weapon2, sight2);
+    ReadSetting(weapon, "Sight", sight);
 
     m_sightLst2.ResetContent();
     index = -1;
@@ -328,7 +333,7 @@ void CHelloPSDlg::UIFromDatabase() {
     while (stmt.step()) {
         stmt.column("Name", name);
 
-        if (index < 0 && name == sight2) {
+        if (index < 0 && name == sight) {
             index = m_sightLst2.GetCount();
         }
 
@@ -342,49 +347,53 @@ void CHelloPSDlg::UIFromDatabase() {
         m_sightLst2.SetCurSel(index);
     }
 
-    // duration
-    ReadSetting("Duration1", duration);
-    text = (LPTSTR)ATL::CA2T(duration.c_str(), CP_UTF8);
-    m_durationEdt1.SetWindowText(text);
+    // extra
+    ReadSetting("Action", action);
+    m_secondaryRad.SetCheck(BST_UNCHECKED);
+    m_primaryRad.SetCheck(BST_UNCHECKED);
 
-    ReadSetting("Duration2", duration);
-    text = (LPTSTR)ATL::CA2T(duration.c_str(), CP_UTF8);
-    m_durationEdt2.SetWindowText(text);
+    if (action == "1") {
+        m_primaryRad.SetCheck(BST_CHECKED);
+        OnBnClickedPrimaryRad();
+    } else if (action == "2") {
+        m_secondaryRad.SetCheck(BST_CHECKED);
+        OnBnClickedSecondaryRad();
+    }
+
+    // duration
+    ReadSetting("Duration Begin", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_durationBeginEdt.SetWindowText(text);
+
+    ReadSetting("Duration End", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_durationEndEdt.SetWindowText(text);
 
     // sensitivity
-    ReadSetting("Sensitivity1", sensitivity);
-    text = (LPTSTR)ATL::CA2T(sensitivity.c_str(), CP_UTF8);
-    m_sensitivityEdt1.SetWindowText(text);
+    ReadSetting("Sensitivity Hip", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_sensitivityHipEdt.SetWindowText(text);
 
-    ReadSetting("Sensitivity2", sensitivity);
-    text = (LPTSTR)ATL::CA2T(sensitivity.c_str(), CP_UTF8);
-    m_sensitivityEdt2.SetWindowText(text);
+    ReadSetting("Sensitivity Aim", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_sensitivityAimEdt.SetWindowText(text);
 
-    ReadSetting("Sensitivity3", sensitivity);
-    text = (LPTSTR)ATL::CA2T(sensitivity.c_str(), CP_UTF8);
-    m_sensitivityEdt3.SetWindowText(text);
+    ReadSetting("Sensitivity Scope", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_sensitivityScopeEdt.SetWindowText(text);
 
-    // delay
-    ReadSetting("Delay1", delay);
-    text = (LPTSTR)ATL::CA2T(delay.c_str(), CP_UTF8);
-    m_delayEdt1.SetWindowText(text);
+    // graphics
+    ReadSetting("Graphics FPS", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_graphicsFpsEdt.SetWindowText(text);
 
-    ReadSetting("Delay2", delay);
-    text = (LPTSTR)ATL::CA2T(delay.c_str(), CP_UTF8);
-    m_delayEdt2.SetWindowText(text);
+    ReadSetting("Graphics Delay", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_graphicsDelayEdt.SetWindowText(text);
 
-    // osd
-    ReadSetting("Osd1", osd);
-    text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
-    m_osdEdt1.SetWindowText(text);
-
-    ReadSetting("Osd2: " + weapon1, osd);
-    text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
-    m_osdEdt2.SetWindowText(text);
-
-    ReadSetting("Osd3: " + weapon1, osd);
-    text = (LPTSTR)ATL::CA2T(osd.c_str(), CP_UTF8);
-    m_osdEdt3.SetWindowText(text);
+    ReadSetting("Graphics FOV", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_graphicsFovEdt.SetWindowText(text);
 }
 
 void CHelloPSDlg::ReadSetting(std::string key, std::string &value) {
@@ -422,10 +431,45 @@ void CHelloPSDlg::WriteSetting(std::string key, std::string value) {
     stmt.finalize();
 }
 
+void CHelloPSDlg::ReadSetting(std::string weapon, std::string key, std::string &value) {
+    soechin::sqlite_stmt stmt;
+
+    value.clear();
+
+    if (weapon.empty() || key.empty()) {
+        return;
+    }
+
+    stmt.prepare(&m_sqlite, "SELECT Value FROM Settings "
+        "WHERE Key = @key;");
+    stmt.bind("@key", "[" + weapon + "] " + key);
+
+    if (stmt.step()) {
+        stmt.column("Value", value);
+    }
+
+    stmt.finalize();
+}
+
+void CHelloPSDlg::WriteSetting(std::string weapon, std::string key, std::string value) {
+    soechin::sqlite_stmt stmt;
+
+    if (weapon.empty() || key.empty()) {
+        return;
+    }
+
+    stmt.prepare(&m_sqlite, "INSERT OR REPLACE INTO Settings "
+        "(Key, Value) VALUES (@key, @value);");
+    stmt.bind("@key", "[" + weapon + "] " + key);
+    stmt.bind("@value", value);
+    stmt.step();
+    stmt.finalize();
+}
+
 void CHelloPSDlg::OnUpdateAction() {
     CSingleLock locker(&m_mutex, TRUE);
     CString text;
-    std::string weapon, sight, category;
+    std::string weapon, sight, str;
     soechin::sqlite_stmt stmt;
 
     if (m_action == 1) {
@@ -448,27 +492,19 @@ void CHelloPSDlg::OnUpdateAction() {
 
     // weapon data
     stmt.prepare(&m_sqlite, "SELECT Category, Speed, Recoil, Factor, "
-        "AngleMin, AngleMax, Burst, Delay, Velocity FROM WeaponsDB WHERE "
+        "AngleMin, AngleMax, Burst, Velocity FROM WeaponsDB WHERE "
         "Name = @name;");
     stmt.bind("@name", weapon);
 
     if (stmt.step()) {
-        stmt.column("Category", category);
+        stmt.column("Category", m_category);
         stmt.column("Speed", m_speed);
         stmt.column("Recoil", m_recoil);
         stmt.column("Factor", m_factor);
         stmt.column("AngleMin", m_angleMin);
         stmt.column("AngleMax", m_angleMax);
         stmt.column("Burst", m_burst);
-        stmt.column("Delay", m_delay);
         stmt.column("Velocity", m_velocity);
-
-        if (category == "Sniper Rifle") {
-            m_recoil = 0;
-            m_gravity = m_osd3;
-        } else {
-            m_gravity = 0;
-        }
     }
 
     stmt.finalize();
@@ -484,39 +520,41 @@ void CHelloPSDlg::OnUpdateAction() {
 
     stmt.finalize();
 
-    // duration
-    m_durationEdt1.GetWindowText(text);
-    m_duration1 = _ttof(text);
+    // extra
+    ReadSetting(weapon, "Gravity", str);
+    m_gravity = atof(str.c_str());
 
-    m_durationEdt2.GetWindowText(text);
-    m_duration2 = _ttof(text);
+    ReadSetting(weapon, "Zeroing", str);
+    m_zeroing = atof(str.c_str());
+
+    // duration
+    m_durationBeginEdt.GetWindowText(text);
+    m_durationBegin = _ttof(text);
+
+    m_durationEndEdt.GetWindowText(text);
+    m_durationEnd = _ttof(text);
 
     // sensitivity
     if (m_zoom <= 1) {
-        m_sensitivityEdt1.GetWindowText(text);
+        m_sensitivityHipEdt.GetWindowText(text);
         m_sensitivity = _ttof(text);
     } else if (m_zoom <= 2) {
-        m_sensitivityEdt2.GetWindowText(text);
+        m_sensitivityAimEdt.GetWindowText(text);
         m_sensitivity = _ttof(text);
     } else {
-        m_sensitivityEdt3.GetWindowText(text);
+        m_sensitivityScopeEdt.GetWindowText(text);
         m_sensitivity = _ttof(text);
     }
 
-    // delay
-    m_delayEdt1.GetWindowText(text);
-    m_delay1 = _ttof(text);
+    // graphics
+    m_graphicsFpsEdt.GetWindowText(text);
+    m_graphicsFps = _ttof(text);
 
-    m_delayEdt2.GetWindowText(text);
-    m_delay2 = _ttof(text);
+    m_graphicsDelayEdt.GetWindowText(text);
+    m_graphicsDelay = _ttof(text);
 
-    // osd
-    m_osdEdt1.GetWindowText(text);
-    m_osd1 = _ttof(text) / 2;
-    m_osdEdt2.GetWindowText(text);
-    m_osd2 = _ttoi(text);
-    m_osdEdt3.GetWindowText(text);
-    m_osd3 = _ttoi(text);
+    m_graphicsFovEdt.GetWindowText(text);
+    m_graphicsFov = _ttof(text) / 2;
 
     // draw osd
     DrawOSD();
@@ -525,18 +563,18 @@ void CHelloPSDlg::OnUpdateAction() {
 void CHelloPSDlg::OnUpdateEnabled() {
     CSingleLock locker(&m_mutex, TRUE);
 
-    m_durationEdt1.EnableWindow(!m_enabled);
-    m_durationEdt2.EnableWindow(!m_enabled);
-    m_sensitivityEdt1.EnableWindow(!m_enabled);
-    m_sensitivityEdt2.EnableWindow(!m_enabled);
-    m_sensitivityEdt3.EnableWindow(!m_enabled);
-    m_delayEdt1.EnableWindow(!m_enabled);
-    m_delayEdt2.EnableWindow(!m_enabled);
-    m_osdEdt1.EnableWindow(!m_enabled);
-    m_osdEdt2.EnableWindow(!m_enabled);
-    m_osdEdt3.EnableWindow(!m_enabled);
-
-    OnUpdateAction();
+    m_primaryRad.EnableWindow(!m_enabled);
+    m_secondaryRad.EnableWindow(!m_enabled);
+    m_gravityEdt.EnableWindow(!m_enabled);
+    m_zeroingEdt.EnableWindow(!m_enabled);
+    m_durationBeginEdt.EnableWindow(!m_enabled);
+    m_durationEndEdt.EnableWindow(!m_enabled);
+    m_sensitivityHipEdt.EnableWindow(!m_enabled);
+    m_sensitivityAimEdt.EnableWindow(!m_enabled);
+    m_sensitivityScopeEdt.EnableWindow(!m_enabled);
+    m_graphicsFpsEdt.EnableWindow(!m_enabled);
+    m_graphicsDelayEdt.EnableWindow(!m_enabled);
+    m_graphicsFovEdt.EnableWindow(!m_enabled);
 }
 
 void CHelloPSDlg::OnBnClickedManageBtn() {
@@ -561,6 +599,7 @@ void CHelloPSDlg::OnCbnSelchangeWeaponLst1() {
     weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
     WriteSetting("Weapon1", weapon);
+
     UIFromDatabase();
     OnUpdateAction();
 }
@@ -573,6 +612,7 @@ void CHelloPSDlg::OnCbnSelchangeWeaponLst2() {
     weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
     WriteSetting("Weapon2", weapon);
+
     UIFromDatabase();
     OnUpdateAction();
 }
@@ -587,10 +627,9 @@ void CHelloPSDlg::OnCbnSelchangeSightLst1() {
     m_sightLst1.GetWindowText(text);
     sight = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
-    if (!weapon.empty()) {
-        WriteSetting("Sight: " + weapon, sight);
-    }
+    WriteSetting(weapon, "Sight", sight);
 
+    UIFromDatabase();
     OnUpdateAction();
 }
 
@@ -604,133 +643,152 @@ void CHelloPSDlg::OnCbnSelchangeSightLst2() {
     m_sightLst2.GetWindowText(text);
     sight = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
-    if (!weapon.empty()) {
-        WriteSetting("Sight: " + weapon, sight);
-    }
+    WriteSetting(weapon, "Sight", sight);
 
+    UIFromDatabase();
     OnUpdateAction();
 }
 
-void CHelloPSDlg::OnEnKillfocusDurationEdt1() {
+void CHelloPSDlg::OnBnClickedPrimaryRad() {
     CString text;
-    std::string duration;
-
-    m_durationEdt1.GetWindowText(text);
-    duration = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Duration1", duration);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusDurationEdt2() {
-    CString text;
-    std::string duration;
-
-    m_durationEdt2.GetWindowText(text);
-    duration = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Duration2", duration);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusSensitivityEdt1() {
-    CString text;
-    std::string sensitivity;
-
-    m_sensitivityEdt1.GetWindowText(text);
-    sensitivity = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Sensitivity1", sensitivity);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusSensitivityEdt2() {
-    CString text;
-    std::string sensitivity;
-
-    m_sensitivityEdt2.GetWindowText(text);
-    sensitivity = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Sensitivity2", sensitivity);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusSensitivityEdt3() {
-    CString text;
-    std::string sensitivity;
-
-    m_sensitivityEdt3.GetWindowText(text);
-    sensitivity = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Sensitivity3", sensitivity);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusDelayEdt1() {
-    CString text;
-    std::string delay;
-
-    m_delayEdt1.GetWindowText(text);
-    delay = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Delay1", delay);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusDelayEdt2() {
-    CString text;
-    std::string delay;
-
-    m_delayEdt2.GetWindowText(text);
-    delay = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Delay2", delay);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusOsdEdt1() {
-    CString text;
-    std::string osd;
-
-    m_osdEdt1.GetWindowText(text);
-    osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
-    WriteSetting("Osd1", osd);
-
-    OnUpdateAction();
-}
-
-void CHelloPSDlg::OnEnKillfocusOsdEdt2() {
-    CString text;
-    std::string weapon, osd;
+    std::string weapon, str;
 
     m_weaponLst1.GetWindowText(text);
     weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
-    m_osdEdt2.GetWindowText(text);
-    osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Action", "1");
 
-    if (!weapon.empty()) {
-        WriteSetting("Osd2: " + weapon, osd);
-    }
+    ReadSetting(weapon, "Gravity", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_gravityEdt.SetWindowText(text);
 
-    OnUpdateAction();
+    ReadSetting(weapon, "Zeroing", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_zeroingEdt.SetWindowText(text);
 }
 
-void CHelloPSDlg::OnEnKillfocusOsdEdt3() {
+void CHelloPSDlg::OnBnClickedSecondaryRad() {
     CString text;
-    std::string weapon, osd;
+    std::string weapon, str;
 
-    m_weaponLst1.GetWindowText(text);
+    m_weaponLst2.GetWindowText(text);
     weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
-    m_osdEdt3.GetWindowText(text);
-    osd = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Action", "2");
 
-    if (!weapon.empty()) {
-        WriteSetting("Osd3: " + weapon, osd);
+    ReadSetting(weapon, "Gravity", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_gravityEdt.SetWindowText(text);
+
+    ReadSetting(weapon, "Zeroing", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_zeroingEdt.SetWindowText(text);
+}
+
+void CHelloPSDlg::OnEnKillfocusGravityEdt() {
+    CString text;
+    std::string weapon, str;
+
+    if (m_primaryRad.GetCheck() == BST_CHECKED) {
+        m_weaponLst1.GetWindowText(text);
+        weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    } else if (m_secondaryRad.GetCheck() == BST_CHECKED) {
+        m_weaponLst2.GetWindowText(text);
+        weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
     }
 
-    OnUpdateAction();
+    m_gravityEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting(weapon, "Gravity", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusZeroingEdt() {
+    CString text;
+    std::string weapon, str;
+
+    if (m_primaryRad.GetCheck() == BST_CHECKED) {
+        m_weaponLst1.GetWindowText(text);
+        weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    } else if (m_secondaryRad.GetCheck() == BST_CHECKED) {
+        m_weaponLst2.GetWindowText(text);
+        weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    }
+
+    m_zeroingEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting(weapon, "Zeroing", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusDurationBeginEdt() {
+    CString text;
+    std::string str;
+
+    m_durationBeginEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Duration Begin", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusDurationEndEdt() {
+    CString text;
+    std::string str;
+
+    m_durationEndEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Duration End", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusSensitivityHipEdt() {
+    CString text;
+    std::string str;
+
+    m_sensitivityHipEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Sensitivity Hip", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusSensitivityAimEdt() {
+    CString text;
+    std::string str;
+
+    m_sensitivityAimEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Sensitivity Aim", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusSensitivityScopeEdt() {
+    CString text;
+    std::string str;
+
+    m_sensitivityScopeEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Sensitivity Scope", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusGraphicsFpsEdt() {
+    CString text;
+    std::string str;
+
+    m_graphicsFpsEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Graphics FPS", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusGraphicsDelayEdt() {
+    CString text;
+    std::string str;
+
+    m_graphicsDelayEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Graphics Delay", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusGraphicsFovEdt() {
+    CString text;
+    std::string str;
+
+    m_graphicsFovEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting("Graphics FOV", str);
 }
 
 #ifdef OBSOLETE_TIMER
@@ -780,14 +838,14 @@ void CHelloPSDlg::TimerFunc1() {
     } else if ((GetAsyncKeyState(0x31) & 0x0001) != 0) { // '1'
         CSingleLock locker(&m_mutex, TRUE);
 
-        if (m_action != 1) {
+        if (m_enabled && m_action != 1) {
             m_action = 1;
             PostMessage(WM_UPDATE_ACTION);
         }
     } else if ((GetAsyncKeyState(0x32) & 0x0001) != 0) { // '2'
         CSingleLock locker(&m_mutex, TRUE);
 
-        if (m_action != 2) {
+        if (m_enabled && m_action != 2) {
             m_action = 2;
             PostMessage(WM_UPDATE_ACTION);
         }
@@ -797,20 +855,24 @@ void CHelloPSDlg::TimerFunc1() {
         (GetAsyncKeyState(0x35) & 0x0001) != 0) { // '5'
         CSingleLock locker(&m_mutex, TRUE);
 
-        if (m_action != 0) {
+        if (m_enabled && m_action != 0) {
             m_action = 0;
             PostMessage(WM_UPDATE_ACTION);
         }
     } else if ((GetAsyncKeyState(VK_XBUTTON1) & 0x0001) != 0) { // 'X1'
         CSingleLock locker(&m_mutex, TRUE);
 
-        m_osdDist = std::min(m_osdDist + 50, 600);
-        PostMessage(WM_UPDATE_ACTION);
+        if (m_enabled && m_action != 0) {
+            m_osdDist += 50;
+            PostMessage(WM_UPDATE_ACTION);
+        }
     } else if ((GetAsyncKeyState(VK_XBUTTON2) & 0x0001) != 0) { // 'X2'
         CSingleLock locker(&m_mutex, TRUE);
 
-        m_osdDist = std::max(m_osdDist - 50, 0);
-        PostMessage(WM_UPDATE_ACTION);
+        if (m_enabled && m_action != 0) {
+            m_osdDist -= 50;
+            PostMessage(WM_UPDATE_ACTION);
+        }
     }
 
     // Q-button
@@ -913,13 +975,13 @@ void CHelloPSDlg::TimerFunc2() {
         time = (double)(tick.QuadPart - m_tick.QuadPart) / m_freq.QuadPart;
 
         // fps interval
-        ifps = 1 / m_delay1;
+        ifps = 1 / m_graphicsFps;
 
         // shot interval
         ishot = 60 / m_speed;
 
         // delay
-        time = std::max(time - m_delay - ifps, 0.0);
+        time = std::max(time - ifps, 0.0);
 
         // time limit(for burst mode)
         if (m_burst > 0) {
@@ -940,7 +1002,7 @@ void CHelloPSDlg::TimerFunc2() {
 
         if (m_burst <= 0) {
             if (lbutton) {
-                m_limit = frac > std::min(ifps / ishot * m_delay2, 1.0) ? ceil(num) : num;
+                m_limit = frac > std::min(ifps / ishot * m_graphicsDelay, 1.0) ? ceil(num) : num;
             }
 
             if (num > m_limit) {
@@ -952,7 +1014,7 @@ void CHelloPSDlg::TimerFunc2() {
         }
 
         // new number
-        frac = (frac - m_duration1) / (m_duration2 - m_duration1);
+        frac = (frac - m_durationBegin) / (m_durationEnd - m_durationBegin);
         num = intp + std::min(std::max(frac, 0.0), 1.0);
 
         // distance to recoil center
@@ -996,11 +1058,10 @@ void CHelloPSDlg::DrawOSD() {
     CFont *font, *font0;
     CRect rect;
     std::map<int, int> drops;
-    int cx, cy, ch, tw, th;
-    int x0, x1, d, r1, r2;
-    double v, g, z, fx, fy, a0, a1;
+    int xres, yres, walk, sprint, x, d, maxd, maxw, maxh;
+    double xfov, yfov, a0, a1;
 
-    if (!m_enabled || (m_action != 1 && m_action != 2) || m_gravity <= 0) {
+    if (!m_enabled || (m_action != 1 && m_action != 2)) {
         if (m_osdWnd->IsWindowVisible()) {
             m_osdWnd->ShowWindow(SW_HIDE);
         }
@@ -1010,9 +1071,37 @@ void CHelloPSDlg::DrawOSD() {
         m_osdWnd->ShowWindow(SW_SHOW);
     }
 
-    // half screen size
-    cx = GetSystemMetrics(SM_CXSCREEN) / 2;
-    cy = GetSystemMetrics(SM_CYSCREEN) / 2;
+    // V: muzzle velocity
+    // G: gravity
+    // X0: zeroing distance
+    // X1: target distance
+    // A(X0): zeroing angle
+    // A(X1): target angle
+    // D: drop offset
+    // ZOOM: zoom level
+    // XFOV: horizonal fov
+    // YFOV: vertical fov
+    // XRES: horizonal resolution
+    // YRES: vertical resolution
+    // XFOV = atan(tan(YFOV) * (XRES / YRES)) * 2
+    // A(X) = asin((X * G) / (V ^ 2)) / 2
+    // D = (A(X1) - A(X0)) * ZOOM * YRES / YFOV
+
+    xres = GetSystemMetrics(SM_CXSCREEN) / 2;
+    yres = GetSystemMetrics(SM_CYSCREEN) / 2;
+    yfov = m_graphicsFov * (M_PI / 180);
+    xfov = atan(tan(yfov) * ((double)xres / yres)) * 2;
+
+    walk = (int)(atan(4.0 / m_velocity) * m_zoom * xres / xfov + 0.5);
+    sprint = (int)(atan(6.5 / m_velocity) * m_zoom * xres / xfov + 0.5);
+
+    for (x = 50; x <= 600; x += 50) {
+        a0 = asin((m_zeroing * m_gravity) / (m_velocity * m_velocity)) / 2;
+        a1 = asin((x * m_gravity) / (m_velocity * m_velocity)) / 2;
+        d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
+
+        drops.insert(std::make_pair(x, d));
+    }
 
     // dc
     dc = m_osdWnd->GetDC();
@@ -1036,51 +1125,36 @@ void CHelloPSDlg::DrawOSD() {
     font0 = dc->SelectObject(font);
 
     // window height
-    ch = 0;
+    maxd = 0;
 
     // text width/height
-    tw = 0;
-    th = 0;
+    maxw = std::max(walk, sprint);
+    maxh = 0;
 
-    // g-formula
-    v = m_velocity;
-    g = m_gravity;
-    z = m_zoom; // zoom level
-    fy = m_osd1 * (M_PI / 180); // y-fov
-    fx = atan(tan(fy) * ((double)cx / cy)) * 2; // x-fov
-    x0 = m_osd2; // zeroing distance
-    a0 = asin((x0 * g) / (v * v)) / 2; // zeroing angle
-    r1 = (int)(atan(4.0 / v) * cx * z / fx + 0.5); // walk
-    r2 = (int)(atan(6.5 / v) * cx * z / fx + 0.5); // sprint
+    for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
+        x = it->first;
+        d = it->second;
 
-    for (x1 = 50; x1 <= 600; x1 += 50) {
-        a1 = asin((x1 * g) / (v * v)) / 2; // sight angle
-        d = (int)((a1 - a0) * (cy * z / fy) + 0.5);
-
-        drops.insert(std::make_pair(x1, d));
-
-        if (d > ch) {
-            ch = d;
+        if (d > maxd) {
+            maxd = d;
         }
 
-        if ((x1 % 100) == 0) {
-            text.Format(TEXT("%d"), x1 / 100);
-            rect.left = 0;
-            rect.top = 0;
-            dc->DrawText(text, &rect, DT_LEFT | DT_TOP | DT_CALCRECT);
+        text.Format(TEXT("%dm"), x);
+        rect.left = 0;
+        rect.top = 0;
+        dc->DrawText(text, &rect, DT_LEFT | DT_TOP | DT_CALCRECT);
 
-            if (rect.right > tw) {
-                tw = rect.right;
-            }
+        if (rect.right > maxw) {
+            maxw = rect.right;
+        }
 
-            if (rect.bottom > th) {
-                th = rect.bottom;
-            }
+        if (rect.bottom > maxh) {
+            maxh = rect.bottom;
         }
     }
 
     // resize window
-    m_osdWnd->SetWindowPos(NULL, cx - tw - r2 - 16, cy, (tw + r2 + 32) * 2, ch + th,
+    m_osdWnd->SetWindowPos(NULL, xres - maxw - 16, yres, (maxw + 16) * 2, maxd + maxh,
         SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
@@ -1088,34 +1162,34 @@ void CHelloPSDlg::DrawOSD() {
     dc->FillRect(&rect, brush);
 
     dc->MoveTo(0, 0);
-    dc->LineTo(r2 - r1, 0);
-    dc->MoveTo((tw + r2) * 2 + 32 - (r2 - r1), 0);
-    dc->LineTo((tw + r2) * 2 + 32, 0);
+    dc->LineTo(sprint - walk, 0);
+    dc->MoveTo((maxw + sprint) * 2 + 32 - (sprint - walk), 0);
+    dc->LineTo((maxw + sprint) * 2 + 32, 0);
 
     for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
         if ((it->first % 200) == 0) {
             text.Format(TEXT("%d"), it->first / 100);
-            rect.left = r2;
-            rect.top = it->second - th / 2;
-            rect.right = rect.left + tw;
-            rect.bottom = rect.top + th;
+            rect.left = sprint;
+            rect.top = it->second - maxh / 2;
+            rect.right = rect.left + maxw;
+            rect.bottom = rect.top + maxh;
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
 
-            dc->MoveTo((tw + r2) + 12, it->second);
-            dc->LineTo((tw + r2) + 21, it->second);
+            dc->MoveTo((maxw + sprint) + 12, it->second);
+            dc->LineTo((maxw + sprint) + 21, it->second);
         } else if ((it->first % 100) == 0) {
             text.Format(TEXT("%d"), it->first / 100);
-            rect.left = (tw + r2) + 32;
-            rect.top = it->second - th / 2;
-            rect.right = rect.left + tw;
-            rect.bottom = rect.top + th;
+            rect.left = (maxw + sprint) + 32;
+            rect.top = it->second - maxh / 2;
+            rect.right = rect.left + maxw;
+            rect.bottom = rect.top + maxh;
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
 
-            dc->MoveTo((tw + r2) + 12, it->second);
-            dc->LineTo((tw + r2) + 21, it->second);
+            dc->MoveTo((maxw + sprint) + 12, it->second);
+            dc->LineTo((maxw + sprint) + 21, it->second);
         } else {
-            dc->MoveTo((tw + r2) + 15, it->second);
-            dc->LineTo((tw + r2) + 18, it->second);
+            dc->MoveTo((maxw + sprint) + 15, it->second);
+            dc->LineTo((maxw + sprint) + 18, it->second);
         }
     }
 
@@ -1130,14 +1204,13 @@ void CHelloPSDlg::DrawOSD() {
         pen->CreatePen(PS_SOLID, 1, m_osdFg2);
         pen0 = dc->SelectObject(pen);
 
-        x1 = m_osdDist;
-        a1 = asin((x1 * g) / (v * v)) / 2; // sight angle
-        d = (int)((a1 - a0) * (cy * z / fy) + 0.5);
+        a1 = asin((m_osdDist * m_gravity) / (m_velocity * m_velocity)) / 2;
+        d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
 
-        dc->MoveTo((tw + r2) + 12, d);
-        dc->LineTo((tw + r2) + 21, d);
-        dc->MoveTo((tw + r2) + 16, d - 4);
-        dc->LineTo((tw + r2) + 16, d + 4);
+        dc->MoveTo((maxw + sprint) + 12, d);
+        dc->LineTo((maxw + sprint) + 21, d);
+        dc->MoveTo((maxw + sprint) + 16, d - 4);
+        dc->LineTo((maxw + sprint) + 16, d + 4);
 
         // delete pen2
         dc->SelectObject(pen0);
@@ -1146,10 +1219,10 @@ void CHelloPSDlg::DrawOSD() {
 
         dc->SetTextColor(m_osdFg2);
         text.Format(TEXT("%dm"), m_osdDist);
-        rect.left = (tw + r2) + 32;
-        rect.top = d - th / 2;
-        rect.right = rect.left + tw + r2 + 32;
-        rect.bottom = rect.top + th;
+        rect.left = (maxw + sprint) + 32;
+        rect.top = d - maxh / 2;
+        rect.right = rect.left + maxw + sprint + 32;
+        rect.bottom = rect.top + maxh;
         dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
     }
 

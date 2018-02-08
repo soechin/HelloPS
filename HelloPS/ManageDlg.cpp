@@ -321,7 +321,7 @@ void CManageDlg::OnBnClickedImportBtn() {
     nlohmann::json json, item, mode, modej;
     soechin::sqlite_stmt stmt;
     double recoil, factor, angleMin, angleMax, velocity;
-    int total, found, burst, delay, speed;
+    int total, found, burst, speed;
 
     if (DownloadWeaponData(file)) {
         // open, read, and close
@@ -359,9 +359,9 @@ void CManageDlg::OnBnClickedImportBtn() {
     // prepare to insert
     stmt.prepare(m_sqlite, "INSERT OR REPLACE INTO WeaponsDB "
         "(Name, Faction, Category, Speed, Recoil, Factor, "
-        "AngleMin, AngleMax, Burst, Delay, Velocity) VALUES "
+        "AngleMin, AngleMax, Burst, Velocity) VALUES "
         "(@name, @faction, @category, @speed, @recoil, @factor, "
-        "@angleMin, @angleMax, @burst, @delay, @velocity);");
+        "@angleMin, @angleMax, @burst, @velocity);");
 
     total = (int)json["item_list"].size();
 
@@ -423,9 +423,6 @@ void CManageDlg::OnBnClickedImportBtn() {
         // burst count
         burst = std::stoi(mode["fire_burst_count"].get<std::string>());
 
-        // first shot delay
-        delay = std::stoi(mode["fire_delay_ms"].get<std::string>());
-
         // auto, semi-auto
         if (burst <= 1) {
             speed = std::stoi(mode["fire_refire_ms"].get<std::string>());
@@ -465,7 +462,6 @@ void CManageDlg::OnBnClickedImportBtn() {
         stmt.bind("@angleMin", angleMin);
         stmt.bind("@angleMax", angleMax);
         stmt.bind("@burst", burst);
-        stmt.bind("@delay", (double)delay / 1000); // ms -> sec
         stmt.bind("@velocity", velocity);
         stmt.step();
 

@@ -15,22 +15,22 @@
 #define IDC_INSERT_BTN                  1008
 #define IDC_REMOVE_BTN                  1009
 #define IDC_IMPORT_BTN                  1010
-#define IDC_SIGHT_LST_1                 1011
-#define IDC_SIGHT_LST_2                 1012
-#define IDC_DURATION_EDT_1              1013
-#define IDC_DURATION_EDT_2              1014
-#define IDC_SENSITIVITY_EDT_1           1015
-#define IDC_SENSITIVITY_EDT_2           1016
-#define IDC_SENSITIVITY_EDT_3           1017
-#define IDC_DELAY_EDT_1                 1018
-#define IDC_DELAY_EDT_2                 1019
-#define IDC_OSD_EDT_1                   1020
-#define IDC_OSD_EDT_2                   1021
-#define IDC_PROGRESS_LBL                1022
-#define IDC_OSD_EDT_3                   1023
+#define IDC_PROGRESS_LBL                1011
+#define IDC_SIGHT_LST_1                 1012
+#define IDC_SIGHT_LST_2                 1013
+#define IDC_GRAVITY_EDT                 1014
+#define IDC_ZEROING_EDT                 1015
+#define IDC_DURATION_BEGIN_EDT          1016
+#define IDC_DURATION_END_EDT            1017
+#define IDC_SENSITIVITY_HIP_EDT         1018
+#define IDC_SENSITIVITY_AIM_EDT         1019
+#define IDC_SENSITIVITY_SCOPE_EDT       1020
+#define IDC_GRAPHICS_FPS_EDT            1021
+#define IDC_GRAPHICS_DELAY_EDT          1022
+#define IDC_GRAPHICS_FOV_EDT            1023
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        202

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "sqlite.hpp"
-#include "afxwin.h"
 
 class CHelloPSDlg : public CDialogEx {
     DECLARE_MESSAGE_MAP()
@@ -15,6 +14,8 @@ class CHelloPSDlg : public CDialogEx {
     virtual void UIFromDatabase();
     virtual void ReadSetting(std::string key, std::string &value);
     virtual void WriteSetting(std::string key, std::string value);
+    virtual void ReadSetting(std::string weapon, std::string key, std::string &value);
+    virtual void WriteSetting(std::string weapon, std::string key, std::string value);
     virtual void OnUpdateAction();
     virtual void OnUpdateEnabled();
     afx_msg void OnBnClickedManageBtn();
@@ -22,16 +23,18 @@ class CHelloPSDlg : public CDialogEx {
     afx_msg void OnCbnSelchangeWeaponLst2();
     afx_msg void OnCbnSelchangeSightLst1();
     afx_msg void OnCbnSelchangeSightLst2();
-    afx_msg void OnEnKillfocusDurationEdt1();
-    afx_msg void OnEnKillfocusDurationEdt2();
-    afx_msg void OnEnKillfocusSensitivityEdt1();
-    afx_msg void OnEnKillfocusSensitivityEdt2();
-    afx_msg void OnEnKillfocusSensitivityEdt3();
-    afx_msg void OnEnKillfocusDelayEdt1();
-    afx_msg void OnEnKillfocusDelayEdt2();
-    afx_msg void OnEnKillfocusOsdEdt1();
-    afx_msg void OnEnKillfocusOsdEdt2();
-    afx_msg void OnEnKillfocusOsdEdt3();
+    afx_msg void OnBnClickedPrimaryRad();
+    afx_msg void OnBnClickedSecondaryRad();
+    afx_msg void OnEnKillfocusGravityEdt();
+    afx_msg void OnEnKillfocusZeroingEdt();
+    afx_msg void OnEnKillfocusDurationBeginEdt();
+    afx_msg void OnEnKillfocusDurationEndEdt();
+    afx_msg void OnEnKillfocusSensitivityHipEdt();
+    afx_msg void OnEnKillfocusSensitivityAimEdt();
+    afx_msg void OnEnKillfocusSensitivityScopeEdt();
+    afx_msg void OnEnKillfocusGraphicsFpsEdt();
+    afx_msg void OnEnKillfocusGraphicsDelayEdt();
+    afx_msg void OnEnKillfocusGraphicsFovEdt();
     // timer/worker
 #ifdef OBSOLETE_TIMER
     static void __stdcall TimerFunc1(UINT uTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
@@ -85,42 +88,43 @@ class CHelloPSDlg : public CDialogEx {
     COLORREF m_osdFg2;
     int m_osdDist;
     // weapon data
+    std::string m_category;
     double m_speed;
     double m_recoil;
     double m_factor;
     double m_angleMin;
     double m_angleMax;
     double m_burst;
-    double m_delay;
     double m_velocity;
-    double m_gravity;
     // sight data
     double m_zoom;
     // settings
-    double m_duration1;
-    double m_duration2;
+    double m_gravity;
+    double m_zeroing;
+    double m_durationBegin;
+    double m_durationEnd;
     double m_sensitivity;
-    double m_delay1;
-    double m_delay2;
+    double m_graphicsFps;
+    double m_graphicsDelay;
+    double m_graphicsFov;
     double m_vertical;
     double m_horizonal;
-    double m_osd1;
-    int m_osd2;
-    double m_osd3;
     // user interface
     CButton m_manageBtn;
     CComboBox m_weaponLst1;
     CComboBox m_weaponLst2;
     CComboBox m_sightLst1;
     CComboBox m_sightLst2;
-    CEdit m_durationEdt1;
-    CEdit m_durationEdt2;
-    CEdit m_sensitivityEdt1;
-    CEdit m_sensitivityEdt2;
-    CEdit m_sensitivityEdt3;
-    CEdit m_delayEdt1;
-    CEdit m_delayEdt2;
-    CEdit m_osdEdt1;
-    CEdit m_osdEdt2;
-    CEdit m_osdEdt3;
+    CButton m_primaryRad;
+    CButton m_secondaryRad;
+    CEdit m_gravityEdt;
+    CEdit m_zeroingEdt;
+    CEdit m_durationBeginEdt;
+    CEdit m_durationEndEdt;
+    CEdit m_sensitivityHipEdt;
+    CEdit m_sensitivityAimEdt;
+    CEdit m_sensitivityScopeEdt;
+    CEdit m_graphicsFpsEdt;
+    CEdit m_graphicsDelayEdt;
+    CEdit m_graphicsFovEdt;
 };
