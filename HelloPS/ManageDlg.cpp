@@ -321,7 +321,7 @@ void CManageDlg::OnBnClickedImportBtn() {
     nlohmann::json json, item, mode, modej;
     soechin::sqlite_stmt stmt;
     double recoil, factor, angleMin, angleMax, velocity;
-    int total, found, burst, speed;
+    int found, burst, speed;
 
     if (DownloadWeaponData(file)) {
         // open, read, and close
@@ -363,9 +363,7 @@ void CManageDlg::OnBnClickedImportBtn() {
         "(@name, @faction, @category, @speed, @recoil, @factor, "
         "@angleMin, @angleMax, @burst, @velocity);");
 
-    total = (int)json["item_list"].size();
-
-    for (int i = 0; i < total; i++) {
+    for (int i = 0; i < (int)json["item_list"].size(); i++) {
         item = json["item_list"][i];
 
         // name, category
@@ -465,7 +463,7 @@ void CManageDlg::OnBnClickedImportBtn() {
         stmt.bind("@velocity", velocity);
         stmt.step();
 
-        text.Format(TEXT("%.0lf%%"), (double)i / total * 100);
+        text.Format(TEXT("%d"), i);
         m_progressLbl.SetWindowText(text);
     }
 
@@ -506,7 +504,7 @@ bool CManageDlg::DownloadWeaponData(CString &jsonFile) {
     TCHAR tempDir[MAX_PATH], tempFile[MAX_PATH];
     BYTE buf[1024];
     UINT len;
-    ULONGLONG total, bytes;
+    ULONGLONG  bytes;
 
     try {
         session.Attach(new CInternetSession());
@@ -520,14 +518,13 @@ bool CManageDlg::DownloadWeaponData(CString &jsonFile) {
     GetTempFileName(tempDir, NULL, 0, tempFile);
     out.Attach(new CStdioFile(tempFile, CFile::modeWrite));
 
-    total = in->GetLength();
     bytes = 0;
 
     while ((len = in->Read(buf, _countof(buf))) > 0) {
         out->Write(buf, len);
         bytes += len;
 
-        text.Format(TEXT("%.0lf%%"), (double)bytes / total * 100);
+        text.Format(TEXT("%llu"), bytes);
         m_progressLbl.SetWindowText(text);
     }
 

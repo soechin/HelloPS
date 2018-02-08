@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sqlite.hpp"
+#include "afxwin.h"
 
 class CHelloPSDlg : public CDialogEx {
     DECLARE_MESSAGE_MAP()
@@ -27,6 +28,7 @@ class CHelloPSDlg : public CDialogEx {
     afx_msg void OnBnClickedSecondaryRad();
     afx_msg void OnEnKillfocusGravityEdt();
     afx_msg void OnEnKillfocusZeroingEdt();
+    afx_msg void OnBnClickedSuppressorChk();
     afx_msg void OnEnKillfocusDurationBeginEdt();
     afx_msg void OnEnKillfocusDurationEndEdt();
     afx_msg void OnEnKillfocusSensitivityHipEdt();
@@ -101,6 +103,7 @@ class CHelloPSDlg : public CDialogEx {
     // settings
     double m_gravity;
     double m_zeroing;
+    bool m_suppressor;
     double m_durationBegin;
     double m_durationEnd;
     double m_sensitivity;
@@ -119,6 +122,7 @@ class CHelloPSDlg : public CDialogEx {
     CButton m_secondaryRad;
     CEdit m_gravityEdt;
     CEdit m_zeroingEdt;
+    CButton m_suppressorChk;
     CEdit m_durationBeginEdt;
     CEdit m_durationEndEdt;
     CEdit m_sensitivityHipEdt;

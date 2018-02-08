@@ -20,22 +20,23 @@
 #define IDC_SIGHT_LST_2                 1013
 #define IDC_GRAVITY_EDT                 1014
 #define IDC_ZEROING_EDT                 1015
-#define IDC_DURATION_BEGIN_EDT          1016
-#define IDC_DURATION_END_EDT            1017
-#define IDC_SENSITIVITY_HIP_EDT         1018
-#define IDC_SENSITIVITY_AIM_EDT         1019
-#define IDC_SENSITIVITY_SCOPE_EDT       1020
-#define IDC_GRAPHICS_FPS_EDT            1021
-#define IDC_GRAPHICS_DELAY_EDT          1022
-#define IDC_GRAPHICS_FOV_EDT            1023
+#define IDC_SUPPRESSOR_CHK              1016
+#define IDC_DURATION_BEGIN_EDT          1017
+#define IDC_DURATION_END_EDT            1018
+#define IDC_SENSITIVITY_HIP_EDT         1019
+#define IDC_SENSITIVITY_AIM_EDT         1020
+#define IDC_SENSITIVITY_SCOPE_EDT       1021
+#define IDC_GRAPHICS_FPS_EDT            1022
+#define IDC_GRAPHICS_DELAY_EDT          1023
+#define IDC_GRAPHICS_FOV_EDT            1024
 
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        202
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1024
+#define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           103
 #endif
 #endif
