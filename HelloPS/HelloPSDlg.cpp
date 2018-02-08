@@ -856,6 +856,7 @@ void CHelloPSDlg::TimerFunc1() {
             if (!m_enabled) {
                 m_enabled = true;
                 PostMessage(WM_UPDATE_ENABLED);
+                PostMessage(WM_UPDATE_ACTION);
             }
         } else if ((GetAsyncKeyState(VK_F2) & 0x0001) != 0) { // ALT-F2
             CSingleLock locker(&m_mutex, TRUE);
@@ -863,6 +864,7 @@ void CHelloPSDlg::TimerFunc1() {
             if (m_enabled) {
                 m_enabled = false;
                 PostMessage(WM_UPDATE_ENABLED);
+                PostMessage(WM_UPDATE_ACTION);
             }
         }
     } else if ((GetAsyncKeyState(0x31) & 0x0001) != 0) { // '1'
@@ -1168,7 +1170,7 @@ void CHelloPSDlg::DrawOSD() {
 
     // pen1
     pen = new CPen();
-    pen->CreatePen(PS_SOLID, 1, m_osdFg1);
+    pen->CreatePen(PS_SOLID, 1, m_osdFg2);
     pen0 = dc->SelectObject(pen);
 
     // font
@@ -1190,7 +1192,7 @@ void CHelloPSDlg::DrawOSD() {
             maxd = d;
         }
 
-        text.Format(TEXT("%dm"), x);
+        text.Format(TEXT("%d"), x / 100);
         rect.left = 0;
         rect.top = 0;
         dc->DrawText(text, &rect, DT_LEFT | DT_TOP | DT_CALCRECT);
@@ -1253,6 +1255,13 @@ void CHelloPSDlg::DrawOSD() {
         }
     }
 
+    if (m_action != 0) {
+        dc->MoveTo(maxw - walk, 0);
+        dc->LineTo(maxw - sprint, 0);
+        dc->MoveTo(maxw + walk, 0);
+        dc->LineTo(maxw + sprint, 0);
+    }
+
     // delete pen1
     dc->SelectObject(pen0);
     pen->DeleteObject();
@@ -1260,15 +1269,8 @@ void CHelloPSDlg::DrawOSD() {
 
     // pen 2
     pen = new CPen();
-    pen->CreatePen(PS_SOLID, 1, m_osdFg2);
+    pen->CreatePen(PS_SOLID, 1, m_osdFg1);
     pen0 = dc->SelectObject(pen);
-
-    if (m_action != 0) {
-        dc->MoveTo(maxw - walk, 0);
-        dc->LineTo(maxw - sprint, 0);
-        dc->MoveTo(maxw + walk, 0);
-        dc->LineTo(maxw + sprint, 0);
-    }
 
     if (m_osdDist < 0) {
         m_osdDist = 0;
@@ -1280,23 +1282,15 @@ void CHelloPSDlg::DrawOSD() {
         a1 = asin((m_osdDist * m_gravity) / (velocity * velocity)) / 2;
         d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
 
-        dc->MoveTo(maxw - 4, d);
-        dc->LineTo(maxw + 5, d);
-        dc->MoveTo(maxw, d - 4);
-        dc->LineTo(maxw, d + 5);
-
-        dc->SetTextColor(m_osdFg2);
-        text.Format(TEXT("%dm"), m_osdDist);
-        rect.left = maxw + 8;
-        rect.top = d - maxh / 2;
-        rect.right = (maxw + 8) * 2;
-        rect.bottom = d + maxh / 2;
-        dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
+        dc->MoveTo(maxw - 7, d);
+        dc->LineTo(maxw + 8, d);
+        dc->MoveTo(maxw, d - 7);
+        dc->LineTo(maxw, d + 8);
     } else {
-        dc->MoveTo(maxw - 4, 0);
-        dc->LineTo(maxw + 5, 0);
+        dc->MoveTo(maxw - 7, 0);
+        dc->LineTo(maxw + 8, 0);
         dc->MoveTo(maxw, 0);
-        dc->LineTo(maxw, 5);
+        dc->LineTo(maxw, 8);
     }
 
     // delete pen2
