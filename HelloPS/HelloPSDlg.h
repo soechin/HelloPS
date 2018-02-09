@@ -104,6 +104,7 @@ class CHelloPSDlg : public CDialogEx {
     double m_gravity;
     double m_zeroing;
     bool m_suppressor;
+    bool m_showTicks;
     double m_durationBegin;
     double m_durationEnd;
     double m_sensitivity;
@@ -123,6 +124,7 @@ class CHelloPSDlg : public CDialogEx {
     CEdit m_gravityEdt;
     CEdit m_zeroingEdt;
     CButton m_suppressorChk;
+    CButton m_showTicksChk;
     CEdit m_durationBeginEdt;
     CEdit m_durationEndEdt;
     CEdit m_sensitivityHipEdt;
@@ -131,4 +133,6 @@ class CHelloPSDlg : public CDialogEx {
     CEdit m_graphicsFpsEdt;
     CEdit m_graphicsDelayEdt;
     CEdit m_graphicsFovEdt;
+  public:
+    afx_msg void OnBnClickedShowTicksChk();
 };

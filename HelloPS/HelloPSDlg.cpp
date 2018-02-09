@@ -36,6 +36,7 @@ BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
     ON_EN_KILLFOCUS(IDC_GRAPHICS_DELAY_EDT, &CHelloPSDlg::OnEnKillfocusGraphicsDelayEdt)
     ON_EN_KILLFOCUS(IDC_GRAPHICS_FOV_EDT, &CHelloPSDlg::OnEnKillfocusGraphicsFovEdt)
     ON_BN_CLICKED(IDC_SUPPRESSOR_CHK, &CHelloPSDlg::OnBnClickedSuppressorChk)
+    ON_BN_CLICKED(IDC_SHOW_TICKS_CHK, &CHelloPSDlg::OnBnClickedShowTicksChk)
 END_MESSAGE_MAP()
 
 CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG) {
@@ -53,6 +54,7 @@ void CHelloPSDlg::DoDataExchange(CDataExchange *pDX) {
     DDX_Control(pDX, IDC_GRAVITY_EDT, m_gravityEdt);
     DDX_Control(pDX, IDC_ZEROING_EDT, m_zeroingEdt);
     DDX_Control(pDX, IDC_SUPPRESSOR_CHK, m_suppressorChk);
+    DDX_Control(pDX, IDC_SHOW_TICKS_CHK, m_showTicksChk);
     DDX_Control(pDX, IDC_DURATION_BEGIN_EDT, m_durationBeginEdt);
     DDX_Control(pDX, IDC_DURATION_END_EDT, m_durationEndEdt);
     DDX_Control(pDX, IDC_SENSITIVITY_HIP_EDT, m_sensitivityHipEdt);
@@ -137,6 +139,7 @@ BOOL CHelloPSDlg::OnInitDialog() {
     m_gravity = 11.25;
     m_zeroing = 0;
     m_suppressor = false;
+    m_showTicks = false;
     m_durationBegin = 0;
     m_durationEnd = 1;
     m_sensitivity = 0.3;
@@ -533,6 +536,9 @@ void CHelloPSDlg::OnUpdateAction() {
     ReadSetting(weapon, "Suppressor", str);
     m_suppressor = atoi(str.c_str()) != 0;
 
+    ReadSetting(weapon, "Show Ticks", str);
+    m_showTicks = atoi(str.c_str()) != 0;
+
     // duration
     m_durationBeginEdt.GetWindowText(text);
     m_durationBegin = _ttof(text);
@@ -574,6 +580,7 @@ void CHelloPSDlg::OnUpdateEnabled() {
     m_gravityEdt.EnableWindow(!m_enabled);
     m_zeroingEdt.EnableWindow(!m_enabled);
     m_suppressorChk.EnableWindow(!m_enabled);
+    m_showTicksChk.EnableWindow(!m_enabled);
     m_durationBeginEdt.EnableWindow(!m_enabled);
     m_durationEndEdt.EnableWindow(!m_enabled);
     m_sensitivityHipEdt.EnableWindow(!m_enabled);
@@ -675,6 +682,9 @@ void CHelloPSDlg::OnBnClickedPrimaryRad() {
 
     ReadSetting(weapon, "Suppressor", str);
     m_suppressorChk.SetCheck((atoi(str.c_str()) != 0) ? BST_CHECKED : BST_UNCHECKED);
+
+    ReadSetting(weapon, "Show Ticks", str);
+    m_showTicksChk.SetCheck((atoi(str.c_str()) != 0) ? BST_CHECKED : BST_UNCHECKED);
 }
 
 void CHelloPSDlg::OnBnClickedSecondaryRad() {
@@ -696,6 +706,9 @@ void CHelloPSDlg::OnBnClickedSecondaryRad() {
 
     ReadSetting(weapon, "Suppressor", str);
     m_suppressorChk.SetCheck((atoi(str.c_str()) != 0) ? BST_CHECKED : BST_UNCHECKED);
+
+    ReadSetting(weapon, "Show Ticks", str);
+    m_showTicksChk.SetCheck((atoi(str.c_str()) != 0) ? BST_CHECKED : BST_UNCHECKED);
 }
 
 void CHelloPSDlg::OnEnKillfocusGravityEdt() {
@@ -747,6 +760,23 @@ void CHelloPSDlg::OnBnClickedSuppressorChk() {
 
     checked = (m_suppressorChk.GetCheck() == BST_CHECKED);
     WriteSetting(weapon, "Suppressor", checked ? "1" : "0");
+}
+
+void CHelloPSDlg::OnBnClickedShowTicksChk() {
+    CString text;
+    std::string weapon;
+    bool checked;
+
+    if (m_primaryRad.GetCheck() == BST_CHECKED) {
+        m_weaponLst1.GetWindowText(text);
+        weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    } else if (m_secondaryRad.GetCheck() == BST_CHECKED) {
+        m_weaponLst2.GetWindowText(text);
+        weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    }
+
+    checked = (m_showTicksChk.GetCheck() == BST_CHECKED);
+    WriteSetting(weapon, "Show Ticks", checked ? "1" : "0");
 }
 
 void CHelloPSDlg::OnEnKillfocusDurationBeginEdt() {
@@ -895,14 +925,14 @@ void CHelloPSDlg::TimerFunc1() {
         CSingleLock locker(&m_mutex, TRUE);
 
         if (m_enabled && m_action != 0) {
-            m_osdDist += 50;
+            m_osdDist++;
             PostMessage(WM_UPDATE_ACTION);
         }
     } else if ((GetAsyncKeyState(VK_XBUTTON2) & 0x0001) != 0) { // 'X2'
         CSingleLock locker(&m_mutex, TRUE);
 
         if (m_enabled && m_action != 0) {
-            m_osdDist -= 50;
+            m_osdDist--;
             PostMessage(WM_UPDATE_ACTION);
         }
     }
@@ -1095,7 +1125,7 @@ void CHelloPSDlg::DrawOSD() {
     CFont *font, *font0;
     CRect rect;
     std::map<int, int> drops;
-    int xres, yres, walk, sprint, x, d, maxd, maxw, maxh;
+    int xres, yres, walk, sprint, mark, x, d, maxd, maxw, maxh;
     double velocity, xfov, yfov, a0, a1;
 
     if (!m_enabled) {
@@ -1144,19 +1174,44 @@ void CHelloPSDlg::DrawOSD() {
     yfov = m_graphicsFov * (M_PI / 180);
     xfov = atan(tan(yfov) * ((double)xres / yres)) * 2;
 
-    if (m_gravity > 0 && m_action != 0) {
-        a0 = asin((m_zeroing * m_gravity) / (velocity * velocity)) / 2;
+    walk = 0;
+    sprint = 0;
+    mark = 0;
 
-        for (x = 50; x <= 600; x += 50) {
-            a1 = asin((x * m_gravity) / (velocity * velocity)) / 2;
-            d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
-
-            drops.insert(std::make_pair(x, d));
-        }
+    if (m_osdDist < 0) {
+        m_osdDist = 0;
+    } else if (m_osdDist > 12) {
+        m_osdDist = 12;
     }
 
-    walk = (int)(atan(4.0 / velocity) * m_zoom * xres / xfov + 0.5);
-    sprint = (int)(atan(6.5 / velocity) * m_zoom * xres / xfov + 0.5);
+    if (m_action != 0) {
+        walk = (int)(atan(4.0 / velocity) * m_zoom * xres / xfov + 0.5);
+        sprint = (int)(atan(6.5 / velocity) * m_zoom * xres / xfov + 0.5);
+
+        if (m_gravity > 0) {
+            a0 = asin((m_zeroing * m_gravity) / (velocity * velocity)) / 2;
+            a1 = asin(((m_osdDist * 50) * m_gravity) / (velocity * velocity)) / 2;
+            d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
+
+            if (d < 0) {
+                d = 0;
+            }
+
+            mark = d;
+
+            for (int i = 1; i <= 12; i++) {
+                x = i * 50;
+                a1 = asin((x * m_gravity) / (velocity * velocity)) / 2;
+                d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
+
+                if (d < 0) {
+                    d = 0;
+                }
+
+                drops.insert(std::make_pair(x, d));
+            }
+        }
+    }
 
     // dc
     dc = m_osdWnd->GetDC();
@@ -1167,11 +1222,6 @@ void CHelloPSDlg::DrawOSD() {
     brush = new CBrush();
     brush->CreateSolidBrush(m_osdBg);
     brush0 = dc->SelectObject(brush);
-
-    // pen1
-    pen = new CPen();
-    pen->CreatePen(PS_SOLID, 1, m_osdFg2);
-    pen0 = dc->SelectObject(pen);
 
     // font
     font = new CFont();
@@ -1192,7 +1242,7 @@ void CHelloPSDlg::DrawOSD() {
             maxd = d;
         }
 
-        text.Format(TEXT("%d"), x / 100);
+        text.Format(TEXT("%dm"), x);
         rect.left = 0;
         rect.top = 0;
         dc->DrawText(text, &rect, DT_LEFT | DT_TOP | DT_CALCRECT);
@@ -1225,9 +1275,32 @@ void CHelloPSDlg::DrawOSD() {
     m_osdWnd->GetClientRect(&rect);
     dc->FillRect(&rect, brush);
 
+    if (m_osdDist > 0) {
+        text.Format(TEXT("%dm"), m_osdDist * 50);
+        rect.left = maxw + 8;
+        rect.top = maxd;
+        rect.right = (maxw + 8) * 2;
+        rect.bottom = maxd + maxh;
+        dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
+    }
+
+    // pen 2
+    pen = new CPen();
+    pen->CreatePen(PS_SOLID, 1, m_osdFg2);
+    pen0 = dc->SelectObject(pen);
+
+    dc->MoveTo(maxw - walk, mark);
+    dc->LineTo(maxw - sprint, mark);
+    dc->MoveTo(maxw + walk, mark);
+    dc->LineTo(maxw + sprint, mark);
+
     for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
         x = it->first;
         d = it->second;
+
+        if (!m_showTicks) {
+            continue;
+        }
 
         if ((x % 200) == 0) {
             text.Format(TEXT("%d"), x / 100);
@@ -1255,45 +1328,22 @@ void CHelloPSDlg::DrawOSD() {
         }
     }
 
-    if (m_action != 0) {
-        dc->MoveTo(maxw - walk, 0);
-        dc->LineTo(maxw - sprint, 0);
-        dc->MoveTo(maxw + walk, 0);
-        dc->LineTo(maxw + sprint, 0);
-    }
-
-    // delete pen1
+    // delete pen2
     dc->SelectObject(pen0);
     pen->DeleteObject();
     delete pen;
 
-    // pen 2
+    // pen1
     pen = new CPen();
     pen->CreatePen(PS_SOLID, 1, m_osdFg1);
     pen0 = dc->SelectObject(pen);
 
-    if (m_osdDist < 0) {
-        m_osdDist = 0;
-    } else if (m_osdDist > 600) {
-        m_osdDist = 600;
-    }
+    dc->MoveTo(maxw - 7, mark);
+    dc->LineTo(maxw + 8, mark);
+    dc->MoveTo(maxw, mark - 7);
+    dc->LineTo(maxw, mark + 8);
 
-    if (m_action != 0 && m_gravity > 0 && m_osdDist > 0) {
-        a1 = asin((m_osdDist * m_gravity) / (velocity * velocity)) / 2;
-        d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
-
-        dc->MoveTo(maxw - 7, d);
-        dc->LineTo(maxw + 8, d);
-        dc->MoveTo(maxw, d - 7);
-        dc->LineTo(maxw, d + 8);
-    } else {
-        dc->MoveTo(maxw - 7, 0);
-        dc->LineTo(maxw + 8, 0);
-        dc->MoveTo(maxw, 0);
-        dc->LineTo(maxw, 8);
-    }
-
-    // delete pen2
+    // delete pen1
     dc->SelectObject(pen0);
     pen->DeleteObject();
     delete pen;
