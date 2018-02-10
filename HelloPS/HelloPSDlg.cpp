@@ -1215,7 +1215,6 @@ void CHelloPSDlg::DrawOSD() {
 
     // dc
     dc = m_osdWnd->GetDC();
-    dc->SetTextColor(m_osdFg1);
     dc->SetBkColor(m_osdBg);
 
     // brush
@@ -1268,19 +1267,20 @@ void CHelloPSDlg::DrawOSD() {
     }
 
     // resize window
-    m_osdWnd->SetWindowPos(NULL, xres - maxw, yres, maxw * 2, maxd + maxh,
+    m_osdWnd->SetWindowPos(NULL, xres - maxw, yres, maxw * 2 + 1, maxd + maxh + 1,
         SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
     m_osdWnd->GetClientRect(&rect);
     dc->FillRect(&rect, brush);
 
-    if (m_osdDist > 0) {
+    if (m_action != 0 && m_gravity > 0 && m_osdDist > 0) {
         text.Format(TEXT("%dm"), m_osdDist * 50);
         rect.left = maxw + 8;
         rect.top = maxd;
         rect.right = (maxw + 8) * 2;
         rect.bottom = maxd + maxh;
+        dc->SetTextColor(m_osdFg2);
         dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
     }
 
@@ -1291,8 +1291,10 @@ void CHelloPSDlg::DrawOSD() {
 
     dc->MoveTo(maxw - walk, mark);
     dc->LineTo(maxw - sprint, mark);
+    dc->LineTo(maxw - sprint, mark + 5);
     dc->MoveTo(maxw + walk, mark);
     dc->LineTo(maxw + sprint, mark);
+    dc->LineTo(maxw + sprint, mark + 5);
 
     for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
         x = it->first;
@@ -1308,6 +1310,7 @@ void CHelloPSDlg::DrawOSD() {
             rect.top = d - maxh / 2;
             rect.right = maxw - 8;
             rect.bottom = d + maxh / 2;
+            dc->SetTextColor(m_osdFg1);
             dc->DrawText(text, &rect, DT_RIGHT | DT_TOP);
 
             dc->MoveTo(maxw - 4, d);
@@ -1318,6 +1321,7 @@ void CHelloPSDlg::DrawOSD() {
             rect.top = d - maxh / 2;
             rect.right = (maxw + 8) * 2;
             rect.bottom = d + maxh / 2;
+            dc->SetTextColor(m_osdFg1);
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
 
             dc->MoveTo(maxw - 4, d);
