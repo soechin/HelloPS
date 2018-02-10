@@ -17,6 +17,45 @@ BEGIN_MESSAGE_MAP(CManageDlg, CDialogEx)
     ON_CBN_SELCHANGE(IDC_CATEGORY_LST, &CManageDlg::OnCbnSelchangeCategoryLst)
 END_MESSAGE_MAP()
 
+std::string json_string(const nlohmann::json &node) {
+    std::string str;
+    int left, right;
+
+    if (!node.is_string()) {
+        return str;
+    }
+
+    str = node.get<std::string>();
+    left = -1;
+    right = str.length();
+
+    for (int i = 0; i < (int)str.length(); i++) {
+        if (isspace(str[i])) {
+            left = i;
+        } else {
+            break;
+        }
+    }
+
+    for (int i = (int)str.length() - 1; i > left; i--) {
+        if (isspace(str[i])) {
+            right = i;
+        } else {
+            break;
+        }
+    }
+
+    return str.substr(left + 1, right - left - 1);
+}
+
+int json_integer(const nlohmann::json &node) {
+    return atoi(json_string(node).c_str());
+}
+
+double json_double(const nlohmann::json &node) {
+    return atof(json_string(node).c_str());
+}
+
 CManageDlg::CManageDlg(soechin::sqlite *sqlite) : CDialogEx(IDD_MANAGE_DIALOG) {
     m_sqlite = sqlite;
 }
@@ -344,6 +383,7 @@ void CManageDlg::OnBnClickedImportBtn() {
     categories.push_back("SMG");
     categories.push_back("Scout Rifle");
     categories.push_back("Sniper Rifle");
+    categories.push_back("Lightning Primary Weapon");
 
     factions.push_back("NS");
     factions.push_back("VS");
@@ -367,13 +407,8 @@ void CManageDlg::OnBnClickedImportBtn() {
         item = json["item_list"][i];
 
         // name, category
-        if (!item["name"]["en"].is_string() ||
-            !item["item_category"]["name"]["en"].is_string()) {
-            continue;
-        }
-
-        name = item["name"]["en"].get<std::string>();
-        category = item["item_category"]["name"]["en"].get<std::string>();
+        name = json_string(item["name"]["en"]);
+        category = json_string(item["item_category"]["name"]["en"]);
 
         // category filter
         found = (int)categories.size();
@@ -419,34 +454,37 @@ void CManageDlg::OnBnClickedImportBtn() {
         }
 
         // burst count
-        burst = std::stoi(mode["fire_burst_count"].get<std::string>());
+        burst = json_integer(mode["fire_burst_count"]);
 
         // auto, semi-auto
         if (burst <= 1) {
-            speed = std::stoi(mode["fire_refire_ms"].get<std::string>());
+            speed = json_integer(mode["fire_refire_ms"]);
+            if (speed == 0) {
+                speed = 1000;
+            }
 
-            if (std::stoi(mode["automatic"].get<std::string>()) != 0) {
+            if (json_integer(mode["automatic"]) != 0) {
                 burst = 0;
             }
         }
         // 2x burst, 3x burst
         else {
-            speed = std::stoi(mode["fire_auto_fire_ms"].get<std::string>());
+            speed = json_integer(mode["fire_auto_fire_ms"]);
         }
 
         // recoil, first shot multiplier, angle
-        recoil = std::stod(mode["recoil_magnitude_min"].get<std::string>());
-        factor = std::stod(mode["recoil_first_shot_modifier"].get<std::string>());
-        angleMin = std::stod(mode["recoil_angle_min"].get<std::string>());
-        angleMax = std::stod(mode["recoil_angle_max"].get<std::string>());
+        recoil = json_double(mode["recoil_magnitude_min"]);
+        factor = json_double(mode["recoil_first_shot_modifier"]);
+        angleMin = json_double(mode["recoil_angle_min"]);
+        angleMax = json_double(mode["recoil_angle_max"]);
 
         // velocity
-        if (mode["projectile_speed_override"].is_string()) {
-            velocity = std::stod(mode["projectile_speed_override"].get<std::string>());
-        } else if (modej["muzzle_velocity"].is_string()) {
-            velocity = std::stod(modej["muzzle_velocity"].get<std::string>());
-        } else {
-            velocity = std::stod(modej["speed"].get<std::string>());
+        velocity = json_double(mode["projectile_speed_override"]);
+        if (velocity == 0) {
+            velocity = json_double(modej["muzzle_velocity"]);
+        }
+        if (velocity == 0) {
+            velocity = json_double(modej["speed"]);
         }
 
         // insert into database

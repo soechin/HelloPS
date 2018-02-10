@@ -988,7 +988,8 @@ void CHelloPSDlg::TimerFunc2() {
         m_idle = false;
 
         // check category
-        if (m_category == "Sniper Rifle") {
+        if (m_category == "Sniper Rifle" ||
+            m_category == "Lightning Primary Weapon") {
             m_idle = true;
         }
 
@@ -1124,9 +1125,9 @@ void CHelloPSDlg::DrawOSD() {
     CPen *pen, *pen0;
     CFont *font, *font0;
     CRect rect;
-    std::map<int, int> drops;
-    int xres, yres, walk, sprint, mark, x, d, maxd, maxw, maxh;
-    double velocity, xfov, yfov, a0, a1;
+    std::map<int, std::pair<int, int>> drops;
+    int xres, yres, walk, sprint, markx, marky, x, dx, dy, maxdx, maxdy, maxw, maxh;
+    double velocity, xfov, yfov, a0, a1, a2, a3, ox, oy, slow, fast;
 
     if (!m_enabled) {
         if (m_osdWnd->IsWindowVisible()) {
@@ -1153,6 +1154,21 @@ void CHelloPSDlg::DrawOSD() {
         }
     }
 
+    // camera offset
+    ox = 0;
+    oy = 0;
+
+    // target moving speed
+    slow = 3.0;
+    fast = 5.0; // 18kmh
+
+    if (m_category == "Lightning Primary Weapon") {
+        ox = -1;
+        oy = 1;
+        slow = 15; // 54.0kmh
+        fast = 24; // 86.4kmh
+    }
+
     // V: muzzle velocity
     // G: gravity
     // X0: zeroing distance
@@ -1176,7 +1192,8 @@ void CHelloPSDlg::DrawOSD() {
 
     walk = 0;
     sprint = 0;
-    mark = 0;
+    markx = 0;
+    marky = 0;
 
     if (m_osdDist < 0) {
         m_osdDist = 0;
@@ -1185,30 +1202,29 @@ void CHelloPSDlg::DrawOSD() {
     }
 
     if (m_action != 0) {
-        walk = (int)(atan(4.0 / velocity) * m_zoom * xres / xfov + 0.5);
-        sprint = (int)(atan(6.5 / velocity) * m_zoom * xres / xfov + 0.5);
+        walk = (int)(atan(slow / velocity) * m_zoom * xres / xfov + 0.5);
+        sprint = (int)(atan(fast / velocity) * m_zoom * xres / xfov + 0.5);
 
         if (m_gravity > 0) {
-            a0 = asin((m_zeroing * m_gravity) / (velocity * velocity)) / 2;
-            a1 = asin(((m_osdDist * 50) * m_gravity) / (velocity * velocity)) / 2;
-            d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
-
-            if (d < 0) {
-                d = 0;
-            }
-
-            mark = d;
-
             for (int i = 1; i <= 12; i++) {
                 x = i * 50;
+                a0 = asin((m_zeroing * m_gravity) / (velocity * velocity)) / 2;
                 a1 = asin((x * m_gravity) / (velocity * velocity)) / 2;
-                d = (int)((a1 - a0) * m_zoom * yres / yfov + 0.5);
+                a2 = atan((tan(a1 - a0) * x + oy) / x);
+                a3 = atan(ox / x);
+                dy = (int)(a2 * m_zoom * yres / yfov + 0.5);
+                dx = (int)(a3 * m_zoom * xres / xfov + 0.5);
 
-                if (d < 0) {
-                    d = 0;
+                if (dy < 0) {
+                    dy = 0;
                 }
 
-                drops.insert(std::make_pair(x, d));
+                if (m_osdDist == i) {
+                    markx = dx;
+                    marky = dy;
+                }
+
+                drops.insert(std::make_pair(x, std::make_pair(dx, dy)));
             }
         }
     }
@@ -1229,16 +1245,22 @@ void CHelloPSDlg::DrawOSD() {
     font0 = dc->SelectObject(font);
 
     // window width, height
-    maxd = 0;
+    maxdx = 0;
+    maxdy = 0;
     maxw = 0;
     maxh = 0;
 
-    for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
+    for (std::map<int, std::pair<int, int>>::iterator it = drops.begin(); it != drops.end(); it++) {
         x = it->first;
-        d = it->second;
+        dx = it->second.first;
+        dy = it->second.second;
 
-        if (d > maxd) {
-            maxd = d;
+        if (abs(dx) > maxdx) {
+            maxdx = abs(dx);
+        }
+
+        if (dy > maxdy) {
+            maxdy = dy;
         }
 
         text.Format(TEXT("%dm"), x);
@@ -1267,7 +1289,7 @@ void CHelloPSDlg::DrawOSD() {
     }
 
     // resize window
-    m_osdWnd->SetWindowPos(NULL, xres - maxw, yres, maxw * 2 + 1, maxd + maxh + 1,
+    m_osdWnd->SetWindowPos(NULL, xres - maxdx - maxw, yres, (maxdx + maxw) * 2 + 1, maxdy + maxh + 1,
         SWP_NOZORDER | SWP_NOACTIVATE);
 
     // clear
@@ -1276,10 +1298,10 @@ void CHelloPSDlg::DrawOSD() {
 
     if (m_action != 0 && m_gravity > 0 && m_osdDist > 0) {
         text.Format(TEXT("%dm"), m_osdDist * 50);
-        rect.left = maxw + 8;
-        rect.top = maxd;
-        rect.right = (maxw + 8) * 2;
-        rect.bottom = maxd + maxh;
+        rect.left = maxdx + maxw + 8;
+        rect.top = maxdy;
+        rect.right = (maxdx + maxw) * 2;
+        rect.bottom = maxdy + maxh;
         dc->SetTextColor(m_osdFg2);
         dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
     }
@@ -1289,16 +1311,19 @@ void CHelloPSDlg::DrawOSD() {
     pen->CreatePen(PS_SOLID, 1, m_osdFg2);
     pen0 = dc->SelectObject(pen);
 
-    dc->MoveTo(maxw - walk, mark);
-    dc->LineTo(maxw - sprint, mark);
-    dc->LineTo(maxw - sprint, mark + 5);
-    dc->MoveTo(maxw + walk, mark);
-    dc->LineTo(maxw + sprint, mark);
-    dc->LineTo(maxw + sprint, mark + 5);
+    if (sprint >= 8) {
+        dc->MoveTo(maxdx + maxw + markx - walk, marky);
+        dc->LineTo(maxdx + maxw + markx - sprint, marky);
+        dc->LineTo(maxdx + maxw + markx - sprint, marky + 5);
+        dc->MoveTo(maxdx + maxw + markx + walk, marky);
+        dc->LineTo(maxdx + maxw + markx + sprint, marky);
+        dc->LineTo(maxdx + maxw + markx + sprint, marky + 5);
+    }
 
-    for (std::map<int, int>::iterator it = drops.begin(); it != drops.end(); it++) {
+    for (std::map<int, std::pair<int, int>>::iterator it = drops.begin(); it != drops.end(); it++) {
         x = it->first;
-        d = it->second;
+        dx = it->second.first;
+        dy = it->second.second;
 
         if (!m_showTicks) {
             continue;
@@ -1307,28 +1332,28 @@ void CHelloPSDlg::DrawOSD() {
         if ((x % 200) == 0) {
             text.Format(TEXT("%d"), x / 100);
             rect.left = 0;
-            rect.top = d - maxh / 2;
-            rect.right = maxw - 8;
-            rect.bottom = d + maxh / 2;
+            rect.top = dy - maxh / 2;
+            rect.right = maxdx + maxw - 8;
+            rect.bottom = dy + maxh / 2;
             dc->SetTextColor(m_osdFg1);
             dc->DrawText(text, &rect, DT_RIGHT | DT_TOP);
 
-            dc->MoveTo(maxw - 4, d);
-            dc->LineTo(maxw + 5, d);
+            dc->MoveTo(maxdx + maxw + dx - 4, dy);
+            dc->LineTo(maxdx + maxw + dx + 5, dy);
         } else if ((x % 100) == 0) {
             text.Format(TEXT("%d"), x / 100);
-            rect.left = maxw + 8;
-            rect.top = d - maxh / 2;
-            rect.right = (maxw + 8) * 2;
-            rect.bottom = d + maxh / 2;
+            rect.left = maxdx + maxw + 8;
+            rect.top = dy - maxh / 2;
+            rect.right = (maxdx + maxw) * 2;
+            rect.bottom = dy + maxh / 2;
             dc->SetTextColor(m_osdFg1);
             dc->DrawText(text, &rect, DT_LEFT | DT_TOP);
 
-            dc->MoveTo(maxw - 4, d);
-            dc->LineTo(maxw + 5, d);
+            dc->MoveTo(maxdx + maxw + dx - 4, dy);
+            dc->LineTo(maxdx + maxw + dx + 5, dy);
         } else {
-            dc->MoveTo(maxw - 2, d);
-            dc->LineTo(maxw + 3, d);
+            dc->MoveTo(maxdx + maxw + dx - 2, dy);
+            dc->LineTo(maxdx + maxw + dx + 3, dy);
         }
     }
 
@@ -1342,10 +1367,10 @@ void CHelloPSDlg::DrawOSD() {
     pen->CreatePen(PS_SOLID, 1, m_osdFg1);
     pen0 = dc->SelectObject(pen);
 
-    dc->MoveTo(maxw - 7, mark);
-    dc->LineTo(maxw + 8, mark);
-    dc->MoveTo(maxw, mark - 7);
-    dc->LineTo(maxw, mark + 8);
+    dc->MoveTo(maxdx + maxw + markx - 7, marky);
+    dc->LineTo(maxdx + maxw + markx + 8, marky);
+    dc->MoveTo(maxdx + maxw + markx, marky - 7);
+    dc->LineTo(maxdx + maxw + markx, marky + 8);
 
     // delete pen1
     dc->SelectObject(pen0);
