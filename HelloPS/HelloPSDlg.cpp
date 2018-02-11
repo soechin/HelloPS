@@ -27,6 +27,9 @@ BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
     ON_BN_CLICKED(IDC_SECONDARY_RAD, &CHelloPSDlg::OnBnClickedSecondaryRad)
     ON_EN_KILLFOCUS(IDC_GRAVITY_EDT, &CHelloPSDlg::OnEnKillfocusGravityEdt)
     ON_EN_KILLFOCUS(IDC_ZEROING_EDT, &CHelloPSDlg::OnEnKillfocusZeroingEdt)
+    ON_EN_KILLFOCUS(IDC_ACCEL_EDT, &CHelloPSDlg::OnEnKillfocusAccelEdt)
+    ON_BN_CLICKED(IDC_SUPPRESSOR_CHK, &CHelloPSDlg::OnBnClickedSuppressorChk)
+    ON_BN_CLICKED(IDC_SHOW_TICKS_CHK, &CHelloPSDlg::OnBnClickedShowTicksChk)
     ON_EN_KILLFOCUS(IDC_DURATION_BEGIN_EDT, &CHelloPSDlg::OnEnKillfocusDurationBeginEdt)
     ON_EN_KILLFOCUS(IDC_DURATION_END_EDT, &CHelloPSDlg::OnEnKillfocusDurationEndEdt)
     ON_EN_KILLFOCUS(IDC_SENSITIVITY_HIP_EDT, &CHelloPSDlg::OnEnKillfocusSensitivityHipEdt)
@@ -35,8 +38,6 @@ BEGIN_MESSAGE_MAP(CHelloPSDlg, CDialogEx)
     ON_EN_KILLFOCUS(IDC_GRAPHICS_FPS_EDT, &CHelloPSDlg::OnEnKillfocusGraphicsFpsEdt)
     ON_EN_KILLFOCUS(IDC_GRAPHICS_DELAY_EDT, &CHelloPSDlg::OnEnKillfocusGraphicsDelayEdt)
     ON_EN_KILLFOCUS(IDC_GRAPHICS_FOV_EDT, &CHelloPSDlg::OnEnKillfocusGraphicsFovEdt)
-    ON_BN_CLICKED(IDC_SUPPRESSOR_CHK, &CHelloPSDlg::OnBnClickedSuppressorChk)
-    ON_BN_CLICKED(IDC_SHOW_TICKS_CHK, &CHelloPSDlg::OnBnClickedShowTicksChk)
 END_MESSAGE_MAP()
 
 CHelloPSDlg::CHelloPSDlg() : CDialogEx(IDD_HELLOPS_DIALOG) {
@@ -53,6 +54,7 @@ void CHelloPSDlg::DoDataExchange(CDataExchange *pDX) {
     DDX_Control(pDX, IDC_SECONDARY_RAD, m_secondaryRad);
     DDX_Control(pDX, IDC_GRAVITY_EDT, m_gravityEdt);
     DDX_Control(pDX, IDC_ZEROING_EDT, m_zeroingEdt);
+    DDX_Control(pDX, IDC_ACCEL_EDT, m_accelEdt);
     DDX_Control(pDX, IDC_SUPPRESSOR_CHK, m_suppressorChk);
     DDX_Control(pDX, IDC_SHOW_TICKS_CHK, m_showTicksChk);
     DDX_Control(pDX, IDC_DURATION_BEGIN_EDT, m_durationBeginEdt);
@@ -131,6 +133,7 @@ BOOL CHelloPSDlg::OnInitDialog() {
     m_angleMax = 0;
     m_burst = 0;
     m_velocity = 0;
+    m_velocityMax = 0;
 
     // sight data
     m_zoom = 1.0;
@@ -138,6 +141,7 @@ BOOL CHelloPSDlg::OnInitDialog() {
     // settings
     m_gravity = 11.25;
     m_zeroing = 0;
+    m_accel = 0;
     m_suppressor = false;
     m_showTicks = false;
     m_durationBegin = 0;
@@ -190,7 +194,8 @@ void CHelloPSDlg::OpenDatabase() {
     m_sqlite.exec("CREATE TABLE IF NOT EXISTS WeaponsDB "
         "(Name TEXT NOT NULL UNIQUE, Faction TEXT, Category TEXT, "
         "Speed INTEGER, Recoil REAL, Factor REAL, AngleMin REAL, "
-        "AngleMax REAL, Burst REAL, Velocity REAL, PRIMARY KEY(Name));");
+        "AngleMax REAL, Burst REAL, Velocity REAL, VelocityMax REAL, "
+        "PRIMARY KEY(Name));");
 
     // create table "Weapons1", "Weapons2"
     m_sqlite.exec("CREATE TABLE IF NOT EXISTS Weapons1 "
@@ -498,7 +503,7 @@ void CHelloPSDlg::OnUpdateAction() {
 
     // weapon data
     stmt.prepare(&m_sqlite, "SELECT Category, Speed, Recoil, Factor, "
-        "AngleMin, AngleMax, Burst, Velocity FROM WeaponsDB WHERE "
+        "AngleMin, AngleMax, Burst, Velocity, VelocityMax FROM WeaponsDB WHERE "
         "Name = @name;");
     stmt.bind("@name", weapon);
 
@@ -511,6 +516,7 @@ void CHelloPSDlg::OnUpdateAction() {
         stmt.column("AngleMax", m_angleMax);
         stmt.column("Burst", m_burst);
         stmt.column("Velocity", m_velocity);
+        stmt.column("VelocityMax", m_velocityMax);
     }
 
     stmt.finalize();
@@ -532,6 +538,9 @@ void CHelloPSDlg::OnUpdateAction() {
 
     ReadSetting(weapon, "Zeroing", str);
     m_zeroing = atof(str.c_str());
+
+    ReadSetting(weapon, "Acceleration", str);
+    m_accel = atof(str.c_str());
 
     ReadSetting(weapon, "Suppressor", str);
     m_suppressor = atoi(str.c_str()) != 0;
@@ -579,6 +588,7 @@ void CHelloPSDlg::OnUpdateEnabled() {
     m_secondaryRad.EnableWindow(!m_enabled);
     m_gravityEdt.EnableWindow(!m_enabled);
     m_zeroingEdt.EnableWindow(!m_enabled);
+    m_accelEdt.EnableWindow(!m_enabled);
     m_suppressorChk.EnableWindow(!m_enabled);
     m_showTicksChk.EnableWindow(!m_enabled);
     m_durationBeginEdt.EnableWindow(!m_enabled);
@@ -680,6 +690,10 @@ void CHelloPSDlg::OnBnClickedPrimaryRad() {
     text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
     m_zeroingEdt.SetWindowText(text);
 
+    ReadSetting(weapon, "Acceleration", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_accelEdt.SetWindowText(text);
+
     ReadSetting(weapon, "Suppressor", str);
     m_suppressorChk.SetCheck((atoi(str.c_str()) != 0) ? BST_CHECKED : BST_UNCHECKED);
 
@@ -703,6 +717,10 @@ void CHelloPSDlg::OnBnClickedSecondaryRad() {
     ReadSetting(weapon, "Zeroing", str);
     text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
     m_zeroingEdt.SetWindowText(text);
+
+    ReadSetting(weapon, "Acceleration", str);
+    text = (LPTSTR)ATL::CA2T(str.c_str(), CP_UTF8);
+    m_accelEdt.SetWindowText(text);
 
     ReadSetting(weapon, "Suppressor", str);
     m_suppressorChk.SetCheck((atoi(str.c_str()) != 0) ? BST_CHECKED : BST_UNCHECKED);
@@ -743,6 +761,23 @@ void CHelloPSDlg::OnEnKillfocusZeroingEdt() {
     m_zeroingEdt.GetWindowText(text);
     str = (LPSTR)ATL::CT2A(text, CP_UTF8);
     WriteSetting(weapon, "Zeroing", str);
+}
+
+void CHelloPSDlg::OnEnKillfocusAccelEdt() {
+    CString text;
+    std::string weapon, str;
+
+    if (m_primaryRad.GetCheck() == BST_CHECKED) {
+        m_weaponLst1.GetWindowText(text);
+        weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    } else if (m_secondaryRad.GetCheck() == BST_CHECKED) {
+        m_weaponLst2.GetWindowText(text);
+        weapon = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    }
+
+    m_accelEdt.GetWindowText(text);
+    str = (LPSTR)ATL::CT2A(text, CP_UTF8);
+    WriteSetting(weapon, "Acceleration", str);
 }
 
 void CHelloPSDlg::OnBnClickedSuppressorChk() {
@@ -904,17 +939,15 @@ void CHelloPSDlg::TimerFunc1() {
             m_action = 1;
             PostMessage(WM_UPDATE_ACTION);
         }
-    } else if ((GetAsyncKeyState(0x32) & 0x0001) != 0) { // '2'
+    } else if ((GetAsyncKeyState(0x32) & 0x0001) != 0 ||  // '2'
+        (GetAsyncKeyState(0x33) & 0x0001) != 0) { // '3'
         CSingleLock locker(&m_mutex, TRUE);
 
         if (m_enabled && m_action != 2) {
             m_action = 2;
             PostMessage(WM_UPDATE_ACTION);
         }
-    } else if ((GetAsyncKeyState(VK_OEM_3) & 0x0001) != 0 || // '`'
-        (GetAsyncKeyState(0x33) & 0x0001) != 0 || // '3'
-        (GetAsyncKeyState(0x34) & 0x0001) != 0 || // '4'
-        (GetAsyncKeyState(0x35) & 0x0001) != 0) { // '5'
+    } else if ((GetAsyncKeyState(VK_OEM_3) & 0x0001) != 0) { // '`'
         CSingleLock locker(&m_mutex, TRUE);
 
         if (m_enabled && m_action != 0) {
@@ -989,7 +1022,8 @@ void CHelloPSDlg::TimerFunc2() {
 
         // check category
         if (m_category == "Sniper Rifle" ||
-            m_category == "Lightning Primary Weapon") {
+            m_category == "Lightning Primary Weapon" ||
+            m_category == "Rocket Launcher") {
             m_idle = true;
         }
 
@@ -1127,7 +1161,7 @@ void CHelloPSDlg::DrawOSD() {
     CRect rect;
     std::map<int, std::pair<int, int>> drops;
     int xres, yres, walk, sprint, markx, marky, x, dx, dy, maxdx, maxdy, maxw, maxh;
-    double velocity, xfov, yfov, a0, a1, a2, a3, ox, oy, slow, fast;
+    double velocity, xfov, yfov, a0, a1, a2, a3, ox, oy, slow, fast, v;
 
     if (!m_enabled) {
         if (m_osdWnd->IsWindowVisible()) {
@@ -1202,14 +1236,28 @@ void CHelloPSDlg::DrawOSD() {
     }
 
     if (m_action != 0) {
-        walk = (int)(atan(slow / velocity) * m_zoom * xres / xfov + 0.5);
-        sprint = (int)(atan(fast / velocity) * m_zoom * xres / xfov + 0.5);
+        v = std::max(velocity, m_velocityMax);
+        walk = (int)(atan(slow / v) * m_zoom * xres / xfov + 0.5);
+        sprint = (int)(atan(fast / v) * m_zoom * xres / xfov + 0.5);
 
         if (m_gravity > 0) {
             for (int i = 1; i <= 12; i++) {
                 x = i * 50;
-                a0 = asin((m_zeroing * m_gravity) / (velocity * velocity)) / 2;
-                a1 = asin((x * m_gravity) / (velocity * velocity)) / 2;
+                v = velocity;
+
+                if (m_accel > 0 && m_velocityMax > 0) {
+                    double t0 = (m_velocityMax - velocity) / m_accel;
+                    double x0 = (m_velocityMax + velocity) * t0 / 2;
+
+                    if (x <= x0) {
+                        v = (velocity + sqrt((velocity * velocity) + m_accel * x * 2)) / 2;
+                    } else {
+                        v = x / (t0 + ((x - x0) / m_velocityMax));
+                    }
+                }
+
+                a0 = asin((m_zeroing * m_gravity) / (v * v)) / 2;
+                a1 = asin((x * m_gravity) / (v * v)) / 2;
                 a2 = atan((tan(a1 - a0) * x + oy) / x);
                 a3 = atan(ox / x);
                 dy = (int)(a2 * m_zoom * yres / yfov + 0.5);

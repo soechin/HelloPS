@@ -359,7 +359,7 @@ void CManageDlg::OnBnClickedImportBtn() {
     std::vector<std::string> categories, factions, modes;
     nlohmann::json json, item, mode, modej;
     soechin::sqlite_stmt stmt;
-    double recoil, factor, angleMin, angleMax, velocity;
+    double recoil, factor, angleMin, angleMax, velocity, velocityMax;
     int found, burst, speed;
 
     if (DownloadWeaponData(file)) {
@@ -384,24 +384,31 @@ void CManageDlg::OnBnClickedImportBtn() {
     categories.push_back("Scout Rifle");
     categories.push_back("Sniper Rifle");
     categories.push_back("Lightning Primary Weapon");
+    categories.push_back("Rocket Launcher");
 
     factions.push_back("NS");
     factions.push_back("VS");
     factions.push_back("NC");
     factions.push_back("TR");
 
+    // fire modes for rifle
     modes.push_back("Auto");
     modes.push_back("3x Burst");
     modes.push_back("2x Burst");
     modes.push_back("Semi-Auto");
     modes.push_back("Bolt Action");
+    // fire modes for rocket launcher
+    modes.push_back("Single Shot");
+    modes.push_back("Lock-on");
+    modes.push_back("Heat Seeking");
+    modes.push_back("Charge");
 
     // prepare to insert
     stmt.prepare(m_sqlite, "INSERT OR REPLACE INTO WeaponsDB "
         "(Name, Faction, Category, Speed, Recoil, Factor, "
-        "AngleMin, AngleMax, Burst, Velocity) VALUES "
+        "AngleMin, AngleMax, Burst, Velocity, VelocityMax) VALUES "
         "(@name, @faction, @category, @speed, @recoil, @factor, "
-        "@angleMin, @angleMax, @burst, @velocity);");
+        "@angleMin, @angleMax, @burst, @velocity, @velocityMax);");
 
     for (int i = 0; i < (int)json["item_list"].size(); i++) {
         item = json["item_list"][i];
@@ -409,6 +416,10 @@ void CManageDlg::OnBnClickedImportBtn() {
         // name, category
         name = json_string(item["name"]["en"]);
         category = json_string(item["item_category"]["name"]["en"]);
+
+        if (name.empty() || category.empty()) {
+            continue;
+        }
 
         // category filter
         found = (int)categories.size();
@@ -429,6 +440,11 @@ void CManageDlg::OnBnClickedImportBtn() {
         else if (item["faction_id"] == "2") faction = factions[2];
         else if (item["faction_id"] == "3") faction = factions[3];
         else faction = factions[0];
+
+        // special case
+        if (category == "Lightning Primary Weapon") {
+            faction = factions[0];
+        }
 
         // fire mode filter
         found = (int)modes.size();
@@ -487,6 +503,8 @@ void CManageDlg::OnBnClickedImportBtn() {
             velocity = json_double(modej["speed"]);
         }
 
+        velocityMax = json_double(modej["max_speed"]);
+
         // insert into database
         stmt.reset();
         stmt.bind("@name", name);
@@ -499,6 +517,7 @@ void CManageDlg::OnBnClickedImportBtn() {
         stmt.bind("@angleMax", angleMax);
         stmt.bind("@burst", burst);
         stmt.bind("@velocity", velocity);
+        stmt.bind("@velocityMax", velocityMax);
         stmt.step();
 
         text.Format(TEXT("%d"), i);

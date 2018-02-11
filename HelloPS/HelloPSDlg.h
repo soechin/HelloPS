@@ -28,7 +28,9 @@ class CHelloPSDlg : public CDialogEx {
     afx_msg void OnBnClickedSecondaryRad();
     afx_msg void OnEnKillfocusGravityEdt();
     afx_msg void OnEnKillfocusZeroingEdt();
+    afx_msg void OnEnKillfocusAccelEdt();
     afx_msg void OnBnClickedSuppressorChk();
+    afx_msg void OnBnClickedShowTicksChk();
     afx_msg void OnEnKillfocusDurationBeginEdt();
     afx_msg void OnEnKillfocusDurationEndEdt();
     afx_msg void OnEnKillfocusSensitivityHipEdt();
@@ -98,11 +100,13 @@ class CHelloPSDlg : public CDialogEx {
     double m_angleMax;
     double m_burst;
     double m_velocity;
+    double m_velocityMax;
     // sight data
     double m_zoom;
     // settings
     double m_gravity;
     double m_zeroing;
+    double m_accel;
     bool m_suppressor;
     bool m_showTicks;
     double m_durationBegin;
@@ -123,6 +127,7 @@ class CHelloPSDlg : public CDialogEx {
     CButton m_secondaryRad;
     CEdit m_gravityEdt;
     CEdit m_zeroingEdt;
+    CEdit m_accelEdt;
     CButton m_suppressorChk;
     CButton m_showTicksChk;
     CEdit m_durationBeginEdt;
@@ -133,6 +138,4 @@ class CHelloPSDlg : public CDialogEx {
     CEdit m_graphicsFpsEdt;
     CEdit m_graphicsDelayEdt;
     CEdit m_graphicsFovEdt;
-  public:
-    afx_msg void OnBnClickedShowTicksChk();
 };
