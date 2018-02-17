@@ -209,6 +209,8 @@ void CHelloPSDlg::OpenDatabase() {
 
     sights["1.0x Hip"] = 1.0;
     sights["1.35x Aim"] = 1.35;
+    sights["1.5x Aim"] = 1.5;
+    sights["1.75x Aim"] = 1.75;
     sights["2.0x Aim"] = 2.0;
     sights["3.4x Scope"] = 3.4;
     sights["4.0x Scope"] = 4.0;
@@ -652,8 +654,6 @@ void CHelloPSDlg::OnCbnSelchangeSightLst1() {
     sight = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
     WriteSetting(weapon, "Sight", sight);
-
-    UIFromDatabase();
     OnUpdateAction();
 }
 
@@ -668,8 +668,6 @@ void CHelloPSDlg::OnCbnSelchangeSightLst2() {
     sight = (LPSTR)ATL::CT2A(text, CP_UTF8);
 
     WriteSetting(weapon, "Sight", sight);
-
-    UIFromDatabase();
     OnUpdateAction();
 }
 
@@ -1160,8 +1158,8 @@ void CHelloPSDlg::DrawOSD() {
     CFont *font, *font0;
     CRect rect;
     std::map<int, std::pair<int, int>> drops;
-    int xres, yres, walk, sprint, markx, marky, x, dx, dy, maxdx, maxdy, maxw, maxh;
-    double velocity, xfov, yfov, a0, a1, a2, a3, ox, oy, slow, fast, v;
+    int xres, yres, mark1, mark2, mark3, markx, marky, x, dx, dy, maxdx, maxdy, maxw, maxh;
+    double velocity, xfov, yfov, a0, a1, a2, a3, ox, oy, slow, medium, fast, v;
 
     if (!m_enabled) {
         if (m_osdWnd->IsWindowVisible()) {
@@ -1193,14 +1191,29 @@ void CHelloPSDlg::DrawOSD() {
     oy = 0;
 
     // target moving speed
-    slow = 3.0;
-    fast = 5.0; // 18kmh
+    slow = 50.0 * (1000.0 / 60 / 60);
+    medium = 70.0 * (1000.0 / 60 / 60);
+    fast = 90.0 * (1000.0 / 60 / 60);
 
-    if (m_category == "Lightning Primary Weapon") {
-        ox = -1;
-        oy = 1;
-        slow = 15; // 54.0kmh
-        fast = 24; // 86.4kmh
+    if (m_category == "Harasser Top Gunner") {
+        if (m_action == 2) {
+            ox = 0;
+            oy = 0;
+        }
+    } else if (m_category == "Lightning Primary Weapon") {
+        if (m_action == 2) {
+            ox = -1;
+            oy = 1;
+        }
+    } else if (m_category == "Magrider Primary Weapon") {
+        if (m_action == 2) {
+            ox = 0;
+            oy = 0.5;
+        }
+    } else {
+        slow = 2.0;
+        medium = 4.0;
+        fast = 6.5;
     }
 
     // V: muzzle velocity
@@ -1224,8 +1237,9 @@ void CHelloPSDlg::DrawOSD() {
     yfov = m_graphicsFov * (M_PI / 180);
     xfov = atan(tan(yfov) * ((double)xres / yres)) * 2;
 
-    walk = 0;
-    sprint = 0;
+    mark1 = 0;
+    mark2 = 0;
+    mark3 = 0;
     markx = 0;
     marky = 0;
 
@@ -1237,8 +1251,9 @@ void CHelloPSDlg::DrawOSD() {
 
     if (m_action != 0) {
         v = std::max(velocity, m_velocityMax);
-        walk = (int)(atan(slow / v) * m_zoom * xres / xfov + 0.5);
-        sprint = (int)(atan(fast / v) * m_zoom * xres / xfov + 0.5);
+        mark1 = (int)(atan(slow / v) * m_zoom * xres / xfov + 0.5);
+        mark2 = (int)(atan(medium / v) * m_zoom * xres / xfov + 0.5);
+        mark3 = (int)(atan(fast / v) * m_zoom * xres / xfov + 0.5);
 
         if (m_gravity > 0) {
             for (int i = 1; i <= 12; i++) {
@@ -1328,8 +1343,8 @@ void CHelloPSDlg::DrawOSD() {
     // add center size
     maxw += 8;
 
-    if (maxw < sprint) {
-        maxw = sprint;
+    if (maxw < mark3) {
+        maxw = mark3;
     }
 
     if (maxh < 8) {
@@ -1358,15 +1373,6 @@ void CHelloPSDlg::DrawOSD() {
     pen = new CPen();
     pen->CreatePen(PS_SOLID, 1, m_osdFg2);
     pen0 = dc->SelectObject(pen);
-
-    if (sprint >= 8) {
-        dc->MoveTo(maxdx + maxw + markx - walk, marky);
-        dc->LineTo(maxdx + maxw + markx - sprint, marky);
-        dc->LineTo(maxdx + maxw + markx - sprint, marky + 5);
-        dc->MoveTo(maxdx + maxw + markx + walk, marky);
-        dc->LineTo(maxdx + maxw + markx + sprint, marky);
-        dc->LineTo(maxdx + maxw + markx + sprint, marky + 5);
-    }
 
     for (std::map<int, std::pair<int, int>>::iterator it = drops.begin(); it != drops.end(); it++) {
         x = it->first;
@@ -1415,10 +1421,25 @@ void CHelloPSDlg::DrawOSD() {
     pen->CreatePen(PS_SOLID, 1, m_osdFg1);
     pen0 = dc->SelectObject(pen);
 
-    dc->MoveTo(maxdx + maxw + markx - 7, marky);
-    dc->LineTo(maxdx + maxw + markx + 8, marky);
-    dc->MoveTo(maxdx + maxw + markx, marky - 7);
-    dc->LineTo(maxdx + maxw + markx, marky + 8);
+    if (m_action != 0) {
+        dc->MoveTo(maxdx + maxw + markx, marky - 7);
+        dc->LineTo(maxdx + maxw + markx, marky + 8);
+        dc->MoveTo(maxdx + maxw + markx - mark1, marky);
+        dc->LineTo(maxdx + maxw + markx + mark1 + 1, marky);
+
+        dc->MoveTo(maxdx + maxw + markx - mark2, marky);
+        dc->LineTo(maxdx + maxw + markx - mark3, marky);
+        dc->LineTo(maxdx + maxw + markx - mark3, marky + 5);
+
+        dc->MoveTo(maxdx + maxw + markx + mark2, marky);
+        dc->LineTo(maxdx + maxw + markx + mark3, marky);
+        dc->LineTo(maxdx + maxw + markx + mark3, marky + 5);
+    } else {
+        dc->MoveTo(maxdx + maxw + markx - 7, marky);
+        dc->LineTo(maxdx + maxw + markx + 8, marky);
+        dc->MoveTo(maxdx + maxw + markx, marky - 7);
+        dc->LineTo(maxdx + maxw + markx, marky + 8);
+    }
 
     // delete pen1
     dc->SelectObject(pen0);

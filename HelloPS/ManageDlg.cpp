@@ -383,8 +383,13 @@ void CManageDlg::OnBnClickedImportBtn() {
     categories.push_back("SMG");
     categories.push_back("Scout Rifle");
     categories.push_back("Sniper Rifle");
-    categories.push_back("Lightning Primary Weapon");
     categories.push_back("Rocket Launcher");
+    categories.push_back("Shotgun");
+    categories.push_back("Harasser Top Gunner");
+    categories.push_back("Lightning Primary Weapon");
+    categories.push_back("Magrider Primary Weapon");
+    categories.push_back("Vanguard Primary Weapon");
+    categories.push_back("Prowler Primary Weapon");
 
     factions.push_back("NS");
     factions.push_back("VS");
@@ -442,7 +447,8 @@ void CManageDlg::OnBnClickedImportBtn() {
         else faction = factions[0];
 
         // special case
-        if (category == "Lightning Primary Weapon") {
+        if (category == "Harasser Top Gunner" ||
+            category == "Lightning Primary Weapon") {
             faction = factions[0];
         }
 
